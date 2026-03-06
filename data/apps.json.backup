@@ -1,0 +1,28 @@
+[
+  {
+    "id": "1772830010385-8rvqc946d",
+    "name": "Glowmate",
+    "package_name": "glowmate",
+    "version": "1.0.1",
+    "description": "Secure encrypted messages",
+    "developer": "Quanta Inc.",
+    "category": "Social",
+    "platform": "android",
+    "size": 96571216,
+    "downloads": 3,
+    "filename": "quanta_app_glowmate_1772830005149-356574250.apk",
+    "icon": "/media/quanta_icon_app_1772830005068-202368134.jpg",
+    "screenshots": [
+      "/media/quanta_screenshot_glowmate_1772830010234-406246193.jpeg",
+      "/media/quanta_screenshot_glowmate_1772830010237-631190373.png",
+      "/media/quanta_screenshot_glowmate_1772830010307-587556161.png"
+    ],
+    "github_repo": null,
+    "video_url": null,
+    "upload_date": "2026-03-06T20:46:50.385Z",
+    "license": "GNU",
+    "verified": true,
+    "rating": 0,
+    "reviewCount": 0
+  }
+]
