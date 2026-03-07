@@ -1,19 +1,21 @@
 #!/data/data/com.termux/files/usr/bin/bash
 APPS_DIR=~/storage/downloads/QuantaOS_Apps
+MEDIA_DIR=~/storage/downloads/QuantaOS_Media
 APPS_JSON=~/QuantaOS/data/apps.json
 
-G='\033[0;32m'
-BG='\033[1;32m'
-R='\033[0;31m'
-Y='\033[1;33m'
-DG='\033[0;90m'
-NC='\033[0m'
-
+G='\033[0;32m'; BG='\033[1;32m'; R='\033[0;31m'; Y='\033[1;33m'; NC='\033[0m'
 LINE="┌─────────────────────────────────────────────────────────┐"
 MID="├─────────────────────────────────────────────────────────┤"
 END="└─────────────────────────────────────────────────────────┘"
 
-CATEGORIES=("Social" "Tools" "Games" "Security" "Internet" "Multimedia" "Navigation" "Development")
+SOCIAL="cx.ring org.briarproject.briar.android im.vector.app org.jitsi.meet"
+TOOLS="com.ghostsq.commander org.sufficientlysecure.keychain com.simplemobiletools.filemanager.pro"
+GAMES="org.tuxtype org.freecol.client"
+SECURITY="org.torproject.android info.guardianproject.orbot com.kunzisoft.keepass.libre"
+INTERNET="org.mozilla.fennec_aurora com.duckduckgo.mobile.android com.devhd.feeder"
+MULTIMEDIA="org.videolan.vlc com.poupa.vinylmusicplayer org.schabi.newpipe"
+
+FDROID_REPO="https://f-droid.org/repo"
 
 header() {
   clear
@@ -22,185 +24,151 @@ header() {
   echo -e "${BG}${MID}${NC}"
 }
 
-search_and_import() {
-  local query=$1
-  local category=$2
-
-  echo -e "${G}  🔍 Searching F-Droid for: $query ...${NC}"
-
-  result=$(curl -s "https://search.f-droid.org/api/search_apps?q=$(echo $query | sed 's/ /%20/g')&page=1")
-
-  if [ -z "$result" ]; then
-    echo -e "${R}  ✘ No results or network error${NC}"
-    sleep 2; return
+download_icon() {
+  local pkg=$1
+  local iconFile="$MEDIA_DIR/quanta_icon_fdroid_${pkg}_$(date +%s%3N).png"
+  curl -sf "$FDROID_REPO/$pkg/en-US/icon.png" -o "$iconFile" 2>/dev/null
+  if [ -s "$iconFile" ]; then
+    echo "/media/$(basename $iconFile)"
+  else
+    rm -f "$iconFile"
+    # Try legacy icon format
+    local versionCode=$2
+    iconFile="$MEDIA_DIR/quanta_icon_fdroid_${pkg}_$(date +%s%3N).png"
+    curl -sf "$FDROID_REPO/${pkg}_${versionCode}.png" -o "$iconFile" 2>/dev/null
+    [ -s "$iconFile" ] && echo "/media/$(basename $iconFile)" || echo ""
   fi
+}
 
-  # Parse results
-  node -e "
-    const fs = require('fs');
-    const results = JSON.parse('$(echo $result | sed "s/'/\\\'/g")');
-    const apps = results.results || results || [];
-    if(!apps.length){ console.log('NO_RESULTS'); process.exit(); }
-    apps.slice(0,10).forEach((a,i) => {
-      const name = (a.name || a.packageName || '').slice(0,20).padEnd(20);
-      const pkg = (a.packageName || '').slice(0,30);
-      console.log('[' + (i+1) + '] ' + name + ' | ' + pkg);
-    });
-  " 2>/dev/null
-
-  echo ""
-  echo -e "${BG}${MID}${NC}"
-  echo -e "${G}  Enter number to import, [a] import all, [b] back: ${NC}"
-  read sel
-
-  case $sel in
-    b) return ;;
-    a)
-      node -e "
-        const results = JSON.parse('$(echo $result | sed "s/'/\\\'/g")');
-        const apps = results.results || results || [];
-        apps.slice(0,10).forEach(a => console.log(a.packageName));
-      " 2>/dev/null | while read pkg; do
-        [ -n "$pkg" ] && import_app "$pkg" "$category"
-      done ;;
-    *)
-      pkg=$(node -e "
-        const results = JSON.parse('$(echo $result | sed "s/'/\\\'/g")');
-        const apps = results.results || results || [];
-        const a = apps[$((sel-1))];
-        if(a) console.log(a.packageName);
-      " 2>/dev/null)
-      [ -n "$pkg" ] && import_app "$pkg" "$category" ;;
-  esac
+download_screenshots() {
+  local pkg=$1
+  local screenshots=()
+  for i in 1 2 3; do
+    local ssFile="$MEDIA_DIR/quanta_screenshot_fdroid_${pkg}_${i}_$(date +%s%3N).png"
+    curl -sf "$FDROID_REPO/$pkg/en-US/phoneScreenshots/${i}.png" -o "$ssFile" 2>/dev/null
+    if [ -s "$ssFile" ]; then
+      screenshots+=("/media/$(basename $ssFile)")
+    else
+      rm -f "$ssFile"
+    fi
+  done
+  echo "${screenshots[@]}"
 }
 
 import_app() {
-  local pkg=$1
-  local category=$2
+  local pkg=$1 category=$2
 
-  echo -e "${G}  📦 Fetching info for $pkg ...${NC}"
+  exists=$(node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('$APPS_JSON','utf8'));console.log(a.find(x=>x.package_name==='$pkg')?'yes':'no');")
+  if [ "$exists" = "yes" ]; then echo -e "${Y}  ⚠  $pkg already exists${NC}"; return; fi
 
-  info=$(curl -s "https://f-droid.org/api/v1/packages/$pkg")
-  if [ -z "$info" ]; then
-    echo -e "${R}  ✘ Could not fetch package info${NC}"; sleep 1; return
-  fi
+  echo -e "${G}  📦 Fetching $pkg ...${NC}"
+  info=$(curl -sf "https://f-droid.org/api/v1/packages/$pkg")
+  if [ -z "$info" ]; then echo -e "${R}  ✘ Not found: $pkg${NC}"; return; fi
 
-  # Check if already in store
-  exists=$(node -e "
-    const fs = require('fs');
-    const apps = JSON.parse(fs.readFileSync('$APPS_JSON', 'utf8'));
-    const found = apps.find(a => a.package_name === '$pkg');
-    console.log(found ? 'yes' : 'no');
-  ")
+  versionCode=$(echo "$info" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{console.log(JSON.parse(d).suggestedVersionCode||'')}catch(e){}});")
+  version=$(echo "$info" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{const j=JSON.parse(d);const p=j.packages&&j.packages.find(x=>x.versionCode==j.suggestedVersionCode);console.log(p?p.versionName:'1.0')}catch(e){console.log('1.0')}});")
 
-  if [ "$exists" = "yes" ]; then
-    echo -e "${Y}  ⚠  $pkg already in store, skipping${NC}"; sleep 1; return
-  fi
+  if [ -z "$versionCode" ]; then echo -e "${R}  ✘ No version for $pkg${NC}"; return; fi
 
-  # Get version code and build APK url
-  versionCode=$(echo "$info" | node -e "
-    let d=''; process.stdin.on('data',c=>d+=c).on('end',()=>{
-      const j=JSON.parse(d);
-      console.log(j.suggestedVersionCode||'');
-    });
-  ")
-
-  version=$(echo "$info" | node -e "
-    let d=''; process.stdin.on('data',c=>d+=c).on('end',()=>{
-      const j=JSON.parse(d);
-      const pkg=j.packages&&j.packages.find(p=>p.versionCode==j.suggestedVersionCode);
-      console.log(pkg?pkg.versionName:'1.0');
-    });
-  ")
-
-  apkName="${pkg}_${versionCode}.apk"
-  apkUrl="https://f-droid.org/repo/$apkName"
+  # Download APK
   outFile="$APPS_DIR/quanta_fdroid_${pkg}_$(date +%s%3N).apk"
+  appName=$(echo "$pkg" | awk -F'.' '{print $NF}')
+  echo -e "${G}  ⬇  Downloading $appName v$version ...${NC}"
+  curl -L --progress-bar "$FDROID_REPO/${pkg}_${versionCode}.apk" -o "$outFile"
+  if [ ! -s "$outFile" ]; then echo -e "${R}  ✘ Download failed${NC}"; rm -f "$outFile"; return; fi
 
-  echo -e "${G}  ⬇  Downloading $pkg v$version ...${NC}"
-  curl -L --progress-bar "$apkUrl" -o "$outFile"
+  # Download icon
+  echo -e "${G}  🖼  Downloading icon ...${NC}"
+  iconPath=$(download_icon "$pkg" "$versionCode")
 
-  if [ ! -f "$outFile" ] || [ ! -s "$outFile" ]; then
-    echo -e "${R}  ✘ Download failed${NC}"; sleep 1; return
-  fi
+  # Download screenshots
+  echo -e "${G}  📸  Downloading screenshots ...${NC}"
+  screenshotPaths=($(download_screenshots "$pkg"))
+
+  # Build screenshots JSON array
+  ssJson=$(node -e "console.log(JSON.stringify($(echo "${screenshotPaths[@]}" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const parts=d.trim().split(/\s+/).filter(Boolean);console.log(JSON.stringify(parts));});")))")
 
   size=$(stat -c%s "$outFile")
   filename=$(basename "$outFile")
-  id="fdroid-$(date +%s%3N)-$$"
 
-  # Add to apps.json
   node -e "
-    const fs = require('fs');
-    const apps = JSON.parse(fs.readFileSync('$APPS_JSON', 'utf8'));
+    const fs=require('fs');
+    const apps=JSON.parse(fs.readFileSync('$APPS_JSON','utf8'));
     apps.push({
-      id: '$id',
-      name: '$pkg'.replace(/\./g,' ').split(' ').pop(),
-      package_name: '$pkg',
-      version: '$version',
-      description: 'Imported from F-Droid',
-      developer: 'F-Droid',
-      category: '$category',
-      platform: 'android',
-      size: $size,
-      downloads: 0,
-      filename: '$filename',
-      icon: '',
-      screenshots: [],
-      github_repo: null,
-      video_url: null,
-      upload_date: new Date().toISOString(),
-      license: 'Open Source',
-      verified: true,
-      rating: 0,
-      reviewCount: 0,
-      source: 'fdroid'
+      id:'fdroid-$(date +%s%3N)',
+      name:'$appName',
+      package_name:'$pkg',
+      version:'$version',
+      description:'Imported from F-Droid',
+      developer:'F-Droid Community',
+      category:'$category',
+      platform:'android',
+      size:$size,
+      downloads:0,
+      filename:'$filename',
+      icon:'$iconPath',
+      screenshots:$ssJson,
+      github_repo:null,
+      video_url:null,
+      upload_date:new Date().toISOString(),
+      license:'Open Source',
+      verified:true,
+      rating:0,
+      reviewCount:0,
+      source:'fdroid'
     });
-    fs.writeFileSync('$APPS_JSON', JSON.stringify(apps, null, 2));
-    console.log('done');
+    fs.writeFileSync('$APPS_JSON',JSON.stringify(apps,null,2));
   "
+  echo -e "${BG}  ✔ $appName imported with icon & screenshots!${NC}"
+}
 
-  echo -e "${BG}  ✔ $pkg imported successfully!${NC}"
-  sleep 1
+sync_category() {
+  local name=$1 pkgs=$2
+  header
+  echo -e "${G}│  Syncing: $name                                  │${NC}"
+  echo -e "${BG}${MID}${NC}"; echo ""
+  for pkg in $pkgs; do import_app "$pkg" "$name"; done
+  echo -e "${BG}  ✔ Done syncing $name!${NC}"
+  read -p "  Press Enter..." _
+}
+
+search_pkg() {
+  echo -ne "${G}  Package name (e.g. cx.ring): ${NC}"; read pkg
+  echo -ne "${G}  Category: ${NC}"; read cat
+  import_app "$pkg" "${cat:-Other}"
+  read -p "  Press Enter..." _
 }
 
 main_menu() {
   header
-  echo -e "${G}│  Choose a category to sync from F-Droid:        │${NC}"
-  echo -e "${BG}${MID}${NC}"
-  for i in "${!CATEGORIES[@]}"; do
-    printf "${G}│  [%d] %-51s│\n${NC}" $((i+1)) "${CATEGORIES[$i]}"
-  done
-  echo -e "${G}│  [s] Search by app name                         │${NC}"
+  echo -e "${G}│  [1] Social                                     │${NC}"
+  echo -e "${G}│  [2] Tools                                      │${NC}"
+  echo -e "${G}│  [3] Games                                      │${NC}"
+  echo -e "${G}│  [4] Security                                   │${NC}"
+  echo -e "${G}│  [5] Internet                                   │${NC}"
+  echo -e "${G}│  [6] Multimedia                                 │${NC}"
+  echo -e "${G}│  [7] Sync ALL categories                        │${NC}"
+  echo -e "${G}│  [s] Search by package name                     │${NC}"
   echo -e "${G}│  [q] Quit                                       │${NC}"
-  echo -e "${BG}${END}${NC}"
-  echo ""
-  echo -ne "${BG}  > ${NC}"
-  read choice
-
+  echo -e "${BG}${END}${NC}"; echo ""
+  echo -ne "${BG}  > ${NC}"; read choice
   case $choice in
-    [1-8])
-      category="${CATEGORIES[$((choice-1))]}"
-      header
-      echo -e "${G}│  Syncing category: $category${NC}"
-      echo -e "${BG}${MID}${NC}"
-      search_and_import "$category" "$category"
+    1) sync_category "Social" "$SOCIAL"; main_menu ;;
+    2) sync_category "Tools" "$TOOLS"; main_menu ;;
+    3) sync_category "Games" "$GAMES"; main_menu ;;
+    4) sync_category "Security" "$SECURITY"; main_menu ;;
+    5) sync_category "Internet" "$INTERNET"; main_menu ;;
+    6) sync_category "Multimedia" "$MULTIMEDIA"; main_menu ;;
+    7)
+      for cat_data in "Social:$SOCIAL" "Tools:$TOOLS" "Games:$GAMES" "Security:$SECURITY" "Internet:$INTERNET" "Multimedia:$MULTIMEDIA"; do
+        sync_category "${cat_data%%:*}" "${cat_data#*:}"
+      done
       main_menu ;;
-    s)
-      echo -ne "${G}  Search F-Droid: ${NC}"
-      read query
-      search_and_import "$query" "Other"
-      main_menu ;;
-    q)
-      echo -e "${BG}  Goodbye.${NC}"; exit 0 ;;
-    *)
-      main_menu ;;
+    s) search_pkg; main_menu ;;
+    q) echo -e "${BG}  Goodbye.${NC}"; exit 0 ;;
+    *) main_menu ;;
   esac
 }
 
-# Check curl available
-if ! command -v curl &>/dev/null; then
-  echo -e "${Y}  Installing curl...${NC}"
-  pkg install -y curl
-fi
-
+pkg install -y curl 2>/dev/null
 main_menu
