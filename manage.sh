@@ -6,17 +6,15 @@ get_appname() {
   basename "$1" .apk | sed 's/quanta_app_//;s/quanta_//' | cut -d'_' -f1
 }
 
-delete_from_json() {
+delete_from_json_by_filename() {
   local filename=$(basename "$1")
-  # Remove entry from apps.json where fileName matches
   node -e "
     const fs = require('fs');
-    const path = '$APPS_JSON';
-    let apps = JSON.parse(fs.readFileSync(path, 'utf8'));
+    let apps = JSON.parse(fs.readFileSync('$APPS_JSON', 'utf8'));
     const before = apps.length;
-    apps = apps.filter(a => !a.fileName.includes('$filename') && a.fileName !== '$filename');
-    fs.writeFileSync(path, JSON.stringify(apps, null, 2));
-    console.log('Removed ' + (before - apps.length) + ' entry from apps.json');
+    apps = apps.filter(a => a.filename !== '$filename');
+    fs.writeFileSync('$APPS_JSON', JSON.stringify(apps, null, 2));
+    console.log('  ✅ Removed ' + (before - apps.length) + ' entry from web');
   "
 }
 
@@ -24,12 +22,11 @@ delete_from_json_by_name() {
   local name=$1
   node -e "
     const fs = require('fs');
-    const path = '$APPS_JSON';
-    let apps = JSON.parse(fs.readFileSync(path, 'utf8'));
+    let apps = JSON.parse(fs.readFileSync('$APPS_JSON', 'utf8'));
     const before = apps.length;
     apps = apps.filter(a => a.name.toLowerCase() !== '$name'.toLowerCase());
-    fs.writeFileSync(path, JSON.stringify(apps, null, 2));
-    console.log('Removed ' + (before - apps.length) + ' entries from apps.json');
+    fs.writeFileSync('$APPS_JSON', JSON.stringify(apps, null, 2));
+    console.log('  ✅ Removed ' + (before - apps.length) + ' entries from web');
   "
 }
 
@@ -39,25 +36,29 @@ list_apps() {
   echo "║       🛠️  QUANTA OS APP MANAGER           ║"
   echo "╚══════════════════════════════════════════╝"
   echo ""
-  printf "  %-5s %-15s %-25s %-8s\n" "No." "Name" "Date Uploaded" "Size"
-  echo "  ────────────────────────────────────────────────"
-  i=1
-  files=()
-  for f in $APPS_DIR/*.apk; do
-    name=$(get_appname "$f")
-    ts=$(basename "$f" .apk | grep -oE '[0-9]{13}' | head -1)
-    date=$(date -d "@$((ts/1000))" "+%Y-%m-%d %H:%M" 2>/dev/null || echo "unknown")
-    size=$(du -h "$f" | cut -f1)
-    printf "  %-5s %-15s %-25s %-8s\n" "[$i]" "$name" "$date" "$size"
-    files+=("$f")
-    ((i++))
-  done
-  echo ""
-  echo "  Total: $(du -sh $APPS_DIR 2>/dev/null | cut -f1)"
+  printf "  %-5s %-15s %-10s %-20s %-8s\n" "No." "Name" "Version" "Date" "Size"
+  echo "  ──────────────────────────────────────────────────────"
+
+  # Read from apps.json for accurate listing
+  node -e "
+    const fs = require('fs');
+    const apps = JSON.parse(fs.readFileSync('$APPS_JSON', 'utf8'));
+    apps.forEach((a, i) => {
+      const date = new Date(a.upload_date).toISOString().slice(0,10);
+      const size = (a.size / 1024 / 1024).toFixed(1) + 'MB';
+      const num = String(i+1).padEnd(5);
+      const name = (a.name || '').padEnd(15);
+      const ver = (a.version || '').padEnd(10);
+      const d = date.padEnd(20);
+      console.log('  [' + num + '] ' + name + ver + d + size);
+    });
+    console.log('');
+    console.log('  Total apps: ' + apps.length);
+  "
+
   echo ""
   echo "  [d] Delete by number"
   echo "  [n] Delete by name"
-  echo "  [c] Delete duplicates (keep latest)"
   echo "  [q] Quit"
   echo ""
   read -p "  Choose: " choice
@@ -65,13 +66,25 @@ list_apps() {
   case $choice in
     d)
       read -p "  Enter number: " num
-      target="${files[$((num-1))]}"
-      if [ -f "$target" ]; then
-        read -p "  ⚠️  Delete $(basename $target)? (y/n): " confirm
+      # Get filename from json
+      target=$(node -e "
+        const fs = require('fs');
+        const apps = JSON.parse(fs.readFileSync('$APPS_JSON', 'utf8'));
+        const a = apps[$((num-1))];
+        if(a) console.log(a.filename);
+      ")
+      appname=$(node -e "
+        const fs = require('fs');
+        const apps = JSON.parse(fs.readFileSync('$APPS_JSON', 'utf8'));
+        const a = apps[$((num-1))];
+        if(a) console.log(a.name);
+      ")
+      if [ -n "$target" ]; then
+        read -p "  ⚠️  Delete $appname ($target)? (y/n): " confirm
         if [ "$confirm" = "y" ]; then
-          delete_from_json "$target"
-          rm "$target"
-          echo "  ✅ Deleted from store and web!"
+          delete_from_json_by_filename "$target"
+          rm -f "$APPS_DIR/$target"
+          echo "  ✅ Deleted from web and storage!"
           sleep 1
         fi
       else
@@ -80,40 +93,9 @@ list_apps() {
       list_apps ;;
     n)
       read -p "  Enter app name: " name
-      matches=($(ls $APPS_DIR/*${name}*.apk 2>/dev/null))
-      if [ ${#matches[@]} -eq 0 ]; then
-        echo "  ❌ No apps found" && sleep 1
-      else
-        echo ""
-        for f in "${matches[@]}"; do echo "  - $(basename $f)"; done
-        read -p "  ⚠️  Delete ${#matches[@]} file(s)? (y/n): " confirm
-        if [ "$confirm" = "y" ]; then
-          delete_from_json_by_name "$name"
-          rm "${matches[@]}"
-          echo "  ✅ Deleted from store and web!"
-          sleep 1
-        fi
-      fi
-      list_apps ;;
-    c)
-      declare -A latest latest_ts
-      for f in $APPS_DIR/*.apk; do
-        n=$(get_appname "$f")
-        ts=$(basename "$f" .apk | grep -oE '[0-9]{13}' | head -1)
-        if [ -z "${latest_ts[$n]}" ] || [ "$ts" -gt "${latest_ts[$n]}" ]; then
-          latest[$n]="$f"; latest_ts[$n]=$ts
-        fi
-      done
-      deleted=0
-      for f in $APPS_DIR/*.apk; do
-        n=$(get_appname "$f")
-        if [ "$f" != "${latest[$n]}" ]; then
-          delete_from_json "$f"
-          rm "$f"
-          ((deleted++))
-        fi
-      done
-      echo "  ✅ Removed $deleted duplicate(s) from store and web!" && sleep 1
+      delete_from_json_by_name "$name"
+      rm -f $APPS_DIR/*${name,,}*.apk
+      sleep 1
       list_apps ;;
     q) echo "Bye! 👋"; exit 0 ;;
     *) list_apps ;;
