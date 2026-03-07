@@ -1,8 +1,36 @@
 #!/data/data/com.termux/files/usr/bin/bash
 APPS_DIR=~/storage/downloads/QuantaOS_Apps
+APPS_JSON=~/QuantaOS/data/apps.json
 
 get_appname() {
   basename "$1" .apk | sed 's/quanta_app_//;s/quanta_//' | cut -d'_' -f1
+}
+
+delete_from_json() {
+  local filename=$(basename "$1")
+  # Remove entry from apps.json where fileName matches
+  node -e "
+    const fs = require('fs');
+    const path = '$APPS_JSON';
+    let apps = JSON.parse(fs.readFileSync(path, 'utf8'));
+    const before = apps.length;
+    apps = apps.filter(a => !a.fileName.includes('$filename') && a.fileName !== '$filename');
+    fs.writeFileSync(path, JSON.stringify(apps, null, 2));
+    console.log('Removed ' + (before - apps.length) + ' entry from apps.json');
+  "
+}
+
+delete_from_json_by_name() {
+  local name=$1
+  node -e "
+    const fs = require('fs');
+    const path = '$APPS_JSON';
+    let apps = JSON.parse(fs.readFileSync(path, 'utf8'));
+    const before = apps.length;
+    apps = apps.filter(a => a.name.toLowerCase() !== '$name'.toLowerCase());
+    fs.writeFileSync(path, JSON.stringify(apps, null, 2));
+    console.log('Removed ' + (before - apps.length) + ' entries from apps.json');
+  "
 }
 
 list_apps() {
@@ -40,7 +68,12 @@ list_apps() {
       target="${files[$((num-1))]}"
       if [ -f "$target" ]; then
         read -p "  ⚠️  Delete $(basename $target)? (y/n): " confirm
-        [ "$confirm" = "y" ] && rm "$target" && echo "  ✅ Deleted!" && sleep 1
+        if [ "$confirm" = "y" ]; then
+          delete_from_json "$target"
+          rm "$target"
+          echo "  ✅ Deleted from store and web!"
+          sleep 1
+        fi
       else
         echo "  ❌ Invalid number" && sleep 1
       fi
@@ -54,7 +87,12 @@ list_apps() {
         echo ""
         for f in "${matches[@]}"; do echo "  - $(basename $f)"; done
         read -p "  ⚠️  Delete ${#matches[@]} file(s)? (y/n): " confirm
-        [ "$confirm" = "y" ] && rm "${matches[@]}" && echo "  ✅ Deleted!" && sleep 1
+        if [ "$confirm" = "y" ]; then
+          delete_from_json_by_name "$name"
+          rm "${matches[@]}"
+          echo "  ✅ Deleted from store and web!"
+          sleep 1
+        fi
       fi
       list_apps ;;
     c)
@@ -69,9 +107,13 @@ list_apps() {
       deleted=0
       for f in $APPS_DIR/*.apk; do
         n=$(get_appname "$f")
-        if [ "$f" != "${latest[$n]}" ]; then rm "$f" && ((deleted++)); fi
+        if [ "$f" != "${latest[$n]}" ]; then
+          delete_from_json "$f"
+          rm "$f"
+          ((deleted++))
+        fi
       done
-      echo "  ✅ Removed $deleted duplicate(s)!" && sleep 1
+      echo "  ✅ Removed $deleted duplicate(s) from store and web!" && sleep 1
       list_apps ;;
     q) echo "Bye! 👋"; exit 0 ;;
     *) list_apps ;;
