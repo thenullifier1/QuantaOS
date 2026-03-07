@@ -9,7 +9,7 @@
     "category": "Social",
     "platform": "android",
     "size": 96571216,
-    "downloads": 3,
+    "downloads": 6,
     "filename": "quanta_app_glowmate_1772830005149-356574250.apk",
     "icon": "/media/quanta_icon_app_1772830005068-202368134.jpg",
     "screenshots": [
@@ -21,6 +21,31 @@
     "video_url": null,
     "upload_date": "2026-03-06T20:46:50.385Z",
     "license": "GNU",
+    "verified": true,
+    "rating": "5.0",
+    "reviewCount": 1
+  },
+  {
+    "id": "1772874465850-xzwd5u97u",
+    "name": "Xacsm",
+    "package_name": "xacsm",
+    "version": "2.0.9",
+    "description": "Good condition",
+    "developer": "The most",
+    "category": "Tools",
+    "platform": "android",
+    "size": 6295890,
+    "downloads": 1,
+    "filename": "quanta_app_xacsm_1772874459550-697102543.apk",
+    "icon": "/media/quanta_icon_app_1772874458676-414260005.png",
+    "screenshots": [
+      "/media/quanta_screenshot_xacsm_1772874464989-993653673.png",
+      "/media/quanta_screenshot_xacsm_1772874465615-792205516.jpg"
+    ],
+    "github_repo": null,
+    "video_url": null,
+    "upload_date": "2026-03-07T09:07:45.850Z",
+    "license": "MIT",
     "verified": true,
     "rating": 0,
     "reviewCount": 0

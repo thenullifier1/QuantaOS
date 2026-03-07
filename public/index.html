@@ -125,7 +125,7 @@
             align-items: center;
             background: white;
             border-radius: 50px;
-            padding: 0 5px 0 20px;
+            padding: 0 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             border: 1px solid #e0e0e0;
         }
@@ -133,28 +133,16 @@
         .search-box i {
             color: #999;
             font-size: 1rem;
+            margin-right: 10px;
         }
 
         .search-box input {
             flex: 1;
-            padding: 12px 10px;
+            padding: 14px 0;
             border: none;
             background: transparent;
             font-size: 0.95rem;
             outline: none;
-        }
-
-        .search-box button {
-            background: #667eea;
-            border: none;
-            color: white;
-            padding: 10px 25px;
-            border-radius: 50px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin: 5px;
         }
 
         .category-grid {
@@ -335,6 +323,11 @@
         .review-count {
             color: #666;
             font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .review-count:hover {
+            text-decoration: underline;
         }
 
         .app-meta {
@@ -385,8 +378,8 @@
 
         .review-btn {
             flex: 1;
-            background: #f0f0f0;
-            color: #666;
+            background: #f59e0b;
+            color: white;
             border: none;
             border-radius: 12px;
             padding: 12px;
@@ -401,7 +394,8 @@
         }
 
         .review-btn:hover {
-            background: #e0e0e0;
+            background: #d97706;
+            transform: translateY(-2px);
         }
 
         .download-btn {
@@ -448,6 +442,10 @@
             animation: slideIn 0.3s ease;
         }
 
+        .review-modal {
+            max-width: 500px;
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateY(-50px);
@@ -471,6 +469,125 @@
 
         .close-modal:hover {
             color: #333;
+        }
+
+        /* Review Form Styles */
+        .review-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .review-form h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .star-rating span {
+            font-size: 40px;
+            cursor: pointer;
+            color: #ddd;
+            transition: all 0.2s;
+        }
+
+        .star-rating span:hover,
+        .star-rating span.active {
+            color: #ffc107;
+            transform: scale(1.1);
+        }
+
+        .review-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .review-input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .review-name-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .submit-review-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .submit-review-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        /* Reviews List */
+        .reviews-list {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .review-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .reviewer-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .review-rating {
+            color: #ffc107;
+        }
+
+        .review-date {
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .review-comment {
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .no-reviews {
+            text-align: center;
+            color: #999;
+            padding: 30px;
         }
 
         /* Details Page Styles */
@@ -701,6 +818,13 @@
             font-size: 0.95rem;
         }
 
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -765,6 +889,10 @@
             cursor: pointer;
         }
 
+        .file-input-area:hover {
+            background: #e0e7ff;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -785,6 +913,11 @@
             color: #667eea;
         }
 
+        .stat-label {
+            color: #999;
+            font-size: 0.8rem;
+        }
+
         .hidden {
             display: none;
         }
@@ -793,6 +926,22 @@
             text-align: center;
             padding: 40px;
             color: #999;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
         }
 
         @media (max-width: 768px) {
@@ -863,7 +1012,6 @@
                 <div class="search-box">
                     <i class="fas fa-search"></i>
                     <input type="text" id="searchInput" placeholder="Search verified open source apps...">
-                    <button onclick="loadApps()">Search</button>
                 </div>
             </div>
 
@@ -911,7 +1059,7 @@
             </div>
         </div>
 
-        <!-- Upload Tab -->
+        <!-- Upload Tab - FIXED with proper form encoding -->
         <div id="uploadTab" class="hidden">
             <div class="upload-form">
                 <h2>Upload Open Source App</h2>
@@ -919,7 +1067,7 @@
                     <i class="fas fa-shield-alt"></i> Apps are automatically verified as open source.
                 </div>
                 
-                <form id="uploadForm" enctype="multipart/form-data">
+                <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/api/upload">
                     <!-- App Icon Upload -->
                     <div class="form-group">
                         <label>App Icon (Optional)</label>
@@ -933,7 +1081,7 @@
                                 <small style="display:block; color:#999; margin-top:5px;">PNG, JPG (512x512)</small>
                             </div>
                         </div>
-                        <input type="file" id="iconInput" name="icon" accept="image/*" style="display:none;" onchange="previewIcon(this)">
+                        <input type="file" id="iconInput" name="icon" accept="image/*" style="display:none;">
                     </div>
 
                     <div class="form-row">
@@ -1003,13 +1151,14 @@
                             <i class="fas fa-cloud-upload-alt"></i>
                             <span id="fileLabel">Click to select APK, IPA, EXE, or other platform file</span>
                         </div>
-                        <input type="file" id="appFile" name="file" required style="display:none;" onchange="updateFileLabel(this)">
-                        <small style="color:#999;">Max size: 500MB</small>
+                        <input type="file" id="appFile" name="file" required style="display:none;" accept=".apk,.ipa,.exe,.dmg,.AppImage,.deb,.rpm,.zip">
+                        <small style="color:#999; display:block; margin-top:5px;">Max size: 500MB</small>
                     </div>
 
                     <div class="form-group">
                         <label>Screenshots (Optional - Max 4)</label>
-                        <input type="file" name="screenshots" accept="image/*" multiple>
+                        <input type="file" name="screenshots" accept="image/*" multiple style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:12px;">
+                        <small style="color:#999;">Show your app in action</small>
                     </div>
 
                     <div class="form-group">
@@ -1017,11 +1166,11 @@
                         <input type="url" name="video_url" placeholder="https://youtube.com/watch?v=...">
                     </div>
 
-                    <button type="submit" class="download-btn">
+                    <button type="submit" class="download-btn" style="margin-top:10px;">
                         <i class="fas fa-cloud-upload-alt"></i> Upload App
                     </button>
                 </form>
-                <div id="uploadMessage"></div>
+                <div id="uploadMessage" style="margin-top:20px;"></div>
             </div>
         </div>
 
@@ -1041,6 +1190,22 @@
         </div>
     </div>
 
+    <!-- Review Modal -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content review-modal">
+            <span class="close-modal" onclick="closeReviewModal()">&times;</span>
+            <div id="reviewContent"></div>
+        </div>
+    </div>
+
+    <!-- View Reviews Modal -->
+    <div id="viewReviewsModal" class="modal">
+        <div class="modal-content review-modal">
+            <span class="close-modal" onclick="closeViewReviewsModal()">&times;</span>
+            <div id="viewReviewsContent"></div>
+        </div>
+    </div>
+
     <!-- Image Viewer Modal -->
     <div id="imageModal" class="image-modal" style="display: none;" onclick="closeImageModal()">
         <img id="fullImage" src="" alt="">
@@ -1051,6 +1216,10 @@
         let currentPlatform = 'all';
         let currentCategory = 'all';
         let allApps = [];
+        let currentReviewApp = null;
+        let currentRating = 0;
+        let allReviews = {};
+        let searchTimeout;
 
         // Tab Navigation
         function showTab(tabName) {
@@ -1066,26 +1235,34 @@
             if (tabName === 'stats') loadStats();
         }
 
-        // Icon Preview
-        function previewIcon(input) {
-            if (input.files && input.files[0]) {
+        // Preview icon
+        document.getElementById('iconInput')?.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     document.getElementById('iconPreview').innerHTML = `<img src="${e.target.result}" alt="Icon">`;
                 }
-                reader.readAsDataURL(input.files[0]);
+                reader.readAsDataURL(e.target.files[0]);
             }
-        }
+        });
 
         // Update file label
-        function updateFileLabel(input) {
+        document.getElementById('appFile')?.addEventListener('change', function(e) {
             const label = document.getElementById('fileLabel');
-            if (input.files && input.files[0]) {
-                label.textContent = input.files[0].name;
+            if (e.target.files && e.target.files[0]) {
+                label.textContent = e.target.files[0].name;
             } else {
                 label.textContent = 'Click to select APK, IPA, EXE, or other platform file';
             }
+        });
+
+        // Handle search input
+        function handleSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(filterApps, 300);
         }
+
+        document.getElementById('searchInput').addEventListener('input', handleSearch);
 
         // Filters
         function filterByPlatform(platform) {
@@ -1130,6 +1307,10 @@
             try {
                 const response = await fetch('/api/apps');
                 allApps = await response.json();
+                
+                // Load reviews for all apps
+                await loadAllReviews();
+                
                 filterApps();
                 updateStats();
             } catch (error) {
@@ -1138,7 +1319,25 @@
             }
         }
 
-        // Display Apps with Details Button
+        // Load all reviews
+        async function loadAllReviews() {
+            for (const app of allApps) {
+                try {
+                    const response = await fetch(`/api/reviews/${app.id}`);
+                    const reviews = await response.json();
+                    allReviews[app.id] = reviews;
+                } catch (error) {
+                    console.error('Error loading reviews for', app.id);
+                }
+            }
+        }
+
+        // Get reviews for an app
+        function getReviews(appId) {
+            return allReviews[appId] || [];
+        }
+
+        // Display Apps
         function displayApps(apps) {
             const container = document.getElementById('appsContainer');
             
@@ -1148,6 +1347,12 @@
             }
 
             container.innerHTML = apps.map(app => {
+                const reviews = getReviews(app.id);
+                const avgRating = reviews.length > 0 
+                    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+                    : 0;
+                const reviewCount = reviews.length;
+
                 const githubHtml = app.github_repo ? 
                     `<a href="https://github.com/${app.github_repo}" target="_blank" class="github-badge">
                         <i class="fab fa-github"></i> GitHub
@@ -1186,9 +1391,11 @@
                     
                     <div class="rating-container">
                         <div class="stars">
-                            ${getStars(app.rating || 0)}
+                            ${getStars(avgRating)}
                         </div>
-                        <span class="review-count">(${app.reviewCount || 0} reviews)</span>
+                        <span class="review-count" onclick="viewReviews('${app.id}')">
+                            (${reviewCount} ${reviewCount === 1 ? 'review' : 'reviews'})
+                        </span>
                     </div>
 
                     <div class="app-meta">
@@ -1199,12 +1406,11 @@
                         <span class="meta-tag"><i class="fas fa-file-contract"></i> ${escapeHtml(app.license || 'OS')}</span>
                     </div>
 
-                    <!-- Action Buttons: Details + Review -->
                     <div class="action-buttons">
                         <button class="details-btn" onclick="viewAppDetails('${app.id}')">
                             <i class="fas fa-info-circle"></i> Details
                         </button>
-                        <button class="review-btn" onclick="alert('Review feature coming soon!')">
+                        <button class="review-btn" onclick="openReviewModal('${app.id}')">
                             <i class="fas fa-star"></i> Review
                         </button>
                     </div>
@@ -1223,6 +1429,11 @@
             
             const modal = document.getElementById('appModal');
             const content = document.getElementById('appDetailsContent');
+            
+            const reviews = getReviews(app.id);
+            const avgRating = reviews.length > 0 
+                ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+                : 0;
             
             const githubHtml = app.github_repo ? 
                 `<a href="https://github.com/${app.github_repo}" target="_blank" class="details-badge github">
@@ -1276,6 +1487,15 @@
                     ${githubHtml}
                 </div>
 
+                <div class="rating-container" style="margin:20px 0;">
+                    <div class="stars" style="font-size:1.5rem;">
+                        ${getStars(avgRating)}
+                    </div>
+                    <span class="review-count" style="font-size:1rem;" onclick="viewReviews('${app.id}')">
+                        ${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}
+                    </span>
+                </div>
+
                 <div class="details-section">
                     <h3><i class="fas fa-info-circle"></i> Description</h3>
                     <div class="details-description">
@@ -1315,6 +1535,15 @@
 
                 ${screenshotsHtml}
                 ${videoHtml}
+
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="review-btn" onclick="openReviewModal('${app.id}')" style="flex:1;">
+                        <i class="fas fa-star"></i> Write a Review
+                    </button>
+                    <a href="/api/download/${app.id}" class="download-btn" style="flex:1;">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                </div>
             `;
             
             modal.style.display = 'block';
@@ -1323,6 +1552,174 @@
         // Close App Modal
         function closeAppModal() {
             document.getElementById('appModal').style.display = 'none';
+        }
+
+        // Open Review Modal
+        function openReviewModal(appId) {
+            const app = allApps.find(a => a.id === appId);
+            if (!app) return;
+            
+            currentReviewApp = appId;
+            currentRating = 0;
+            
+            const modal = document.getElementById('reviewModal');
+            const content = document.getElementById('reviewContent');
+            
+            content.innerHTML = `
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h2>Review ${escapeHtml(app.name)}</h2>
+                    <p style="color:#666; margin-top:10px;">Share your experience with this app</p>
+                </div>
+                
+                <div class="review-form">
+                    <div style="text-align:center;">
+                        <label style="font-weight:600; margin-bottom:10px; display:block;">Your Rating</label>
+                        <div class="star-rating" id="starRating">
+                            ${[1,2,3,4,5].map(i => `<span onclick="setRating(${i})" id="star-${i}">★</span>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight:600; margin-bottom:10px; display:block;">Your Name (Optional)</label>
+                        <input type="text" id="reviewerName" class="review-name-input" placeholder="Anonymous">
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight:600; margin-bottom:10px; display:block;">Your Review</label>
+                        <textarea id="reviewComment" class="review-input" rows="4" placeholder="What did you think?"></textarea>
+                    </div>
+                    
+                    <button class="submit-review-btn" onclick="submitReview()">
+                        Submit Review
+                    </button>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        // Close Review Modal
+        function closeReviewModal() {
+            document.getElementById('reviewModal').style.display = 'none';
+            currentReviewApp = null;
+            currentRating = 0;
+        }
+
+        // Set Rating
+        function setRating(rating) {
+            currentRating = rating;
+            for (let i = 1; i <= 5; i++) {
+                const star = document.getElementById(`star-${i}`);
+                if (star) {
+                    if (i <= rating) {
+                        star.classList.add('active');
+                    } else {
+                        star.classList.remove('active');
+                    }
+                }
+            }
+        }
+
+        // Submit Review
+        async function submitReview() {
+            if (!currentRating) {
+                alert('Please select a rating');
+                return;
+            }
+            
+            const comment = document.getElementById('reviewComment')?.value || '';
+            const userName = document.getElementById('reviewerName')?.value || 'Anonymous';
+            
+            try {
+                const response = await fetch(`/api/review/${currentReviewApp}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rating: currentRating,
+                        comment: comment,
+                        userName: userName
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ Review submitted successfully!');
+                    closeReviewModal();
+                    
+                    // Reload reviews for this app
+                    const reviewsResponse = await fetch(`/api/reviews/${currentReviewApp}`);
+                    const reviews = await reviewsResponse.json();
+                    allReviews[currentReviewApp] = reviews;
+                    
+                    // Update display
+                    loadApps();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error submitting review');
+            }
+        }
+
+        // View Reviews
+        function viewReviews(appId) {
+            const app = allApps.find(a => a.id === appId);
+            if (!app) return;
+            
+            const reviews = getReviews(appId);
+            
+            const modal = document.getElementById('viewReviewsModal');
+            const content = document.getElementById('viewReviewsContent');
+            
+            const avgRating = reviews.length > 0 
+                ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+                : 0;
+            
+            let reviewsHtml = '';
+            if (reviews.length === 0) {
+                reviewsHtml = '<div class="no-reviews">No reviews yet. Be the first to review!</div>';
+            } else {
+                reviewsHtml = reviews.map(r => `
+                    <div class="review-item">
+                        <div class="review-header">
+                            <span class="reviewer-name">${escapeHtml(r.userName)}</span>
+                            <span class="review-rating">${'★'.repeat(r.rating)}</span>
+                        </div>
+                        <div class="review-comment">${escapeHtml(r.comment)}</div>
+                        <div class="review-date">${new Date(r.date).toLocaleDateString()}</div>
+                    </div>
+                `).join('');
+            }
+            
+            content.innerHTML = `
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h2>Reviews for ${escapeHtml(app.name)}</h2>
+                    <div style="margin:15px 0;">
+                        <span style="font-size:2rem; font-weight:700; color:#667eea;">${avgRating}</span>
+                        <span style="color:#666;"> out of 5</span>
+                        <div class="stars" style="font-size:1.5rem; margin-top:5px;">
+                            ${getStars(avgRating)}
+                        </div>
+                        <p style="color:#666;">${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}</p>
+                    </div>
+                </div>
+                
+                <div class="reviews-list">
+                    ${reviewsHtml}
+                </div>
+                
+                <button class="review-btn" onclick="openReviewModal('${appId}')" style="margin-top:20px; width:100%;">
+                    <i class="fas fa-star"></i> Write a Review
+                </button>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        // Close View Reviews Modal
+        function closeViewReviewsModal() {
+            document.getElementById('viewReviewsModal').style.display = 'none';
         }
 
         // View Full Image
@@ -1340,6 +1737,7 @@
 
         // Get Stars
         function getStars(rating) {
+            rating = parseFloat(rating) || 0;
             const full = Math.floor(rating);
             const half = rating % 1 >= 0.5 ? 1 : 0;
             const empty = 5 - full - half;
@@ -1381,34 +1779,46 @@
             } catch (error) {}
         }
 
-        // Upload Form
+        // Upload Form - FIXED submit handler
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const formData = new FormData(e.target);
             const messageDiv = document.getElementById('uploadMessage');
             
-            messageDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Uploading...</div>';
+            messageDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Uploading... (This may take a moment for large files)</div>';
             
             try {
                 const response = await fetch('/api/upload', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    // Don't set Content-Type header - browser sets it with boundary
                 });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        throw new Error(errorJson.error || 'Upload failed');
+                    } catch {
+                        throw new Error('Upload failed: Server error');
+                    }
+                }
                 
                 const data = await response.json();
                 
-                if (response.ok) {
+                if (data.success) {
                     messageDiv.innerHTML = `<div class="success"><i class="fas fa-check-circle"></i> ${data.message}</div>`;
                     e.target.reset();
                     document.getElementById('iconPreview').innerHTML = '<i class="fas fa-apple-alt"></i>';
                     document.getElementById('fileLabel').textContent = 'Click to select APK, IPA, EXE, or other platform file';
                     setTimeout(() => showTab('browse'), 2000);
                 } else {
-                    messageDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-circle"></i> ${data.error}</div>`;
+                    throw new Error(data.error || 'Upload failed');
                 }
             } catch (error) {
-                messageDiv.innerHTML = `<div class="error">Upload failed: ${error.message}</div>`;
+                console.error('Upload error:', error);
+                messageDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-circle"></i> ${error.message}</div>`;
             }
         });
 
@@ -1431,18 +1841,20 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
-        // Search debounce
-        let searchTimeout;
-        document.getElementById('searchInput').addEventListener('input', () => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(filterApps, 500);
-        });
-
-        // Close modal when clicking outside
+        // Close modals when clicking outside
         window.onclick = function(event) {
-            const modal = document.getElementById('appModal');
-            if (event.target === modal) {
-                modal.style.display = 'none';
+            const appModal = document.getElementById('appModal');
+            const reviewModal = document.getElementById('reviewModal');
+            const viewReviewsModal = document.getElementById('viewReviewsModal');
+            
+            if (event.target === appModal) {
+                appModal.style.display = 'none';
+            }
+            if (event.target === reviewModal) {
+                reviewModal.style.display = 'none';
+            }
+            if (event.target === viewReviewsModal) {
+                viewReviewsModal.style.display = 'none';
             }
         };
 

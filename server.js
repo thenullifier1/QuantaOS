@@ -1,13 +1,14 @@
-// server.js - Quanta OS App Store (FULLY FIXED - No Wildcard Error)
+// server.js - Quanta OS App Store (ULTIMATE FIX - No More Aborted Errors)
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const http = require('http');
 const app = express();
 
 // ==================== CONFIGURATION ====================
-const APP_STORE_VERSION = '3.2.2';
+const APP_STORE_VERSION = '3.2.4';
 const HOME_DIR = process.env.HOME;
 const UPLOAD_DIR = path.join(HOME_DIR, 'storage', 'downloads', 'QuantaOS_Apps');
 const MEDIA_DIR = path.join(HOME_DIR, 'storage', 'downloads', 'QuantaOS_Media');
@@ -117,137 +118,199 @@ const upload = multer({
     storage: storage,
     limits: { 
         fileSize: 500 * 1024 * 1024, // 500MB
-        files: 10 
+        files: 10,
+        fieldSize: 50 * 1024 * 1024,
+        fields: 20
     }
 });
 
 // ==================== MIDDLEWARE ====================
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ extended: true, limit: '500mb' }));
+
+// Add keep-alive and timeout headers
+app.use((req, res, next) => {
+    // Set longer timeouts for upload routes
+    if (req.path === '/api/upload') {
+        req.setTimeout(300000); // 5 minutes
+        res.setTimeout(300000); // 5 minutes
+    } else {
+        req.setTimeout(120000); // 2 minutes
+        res.setTimeout(120000); // 2 minutes
+    }
+    
+    // Add keep-alive headers
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Keep-Alive', 'timeout=300');
+    
+    next();
+});
+
 app.use(express.static(PUBLIC_DIR));
 app.use('/downloads', express.static(UPLOAD_DIR));
 app.use('/media', express.static(MEDIA_DIR));
 
 // ==================== API ENDPOINTS ====================
 
-// Upload endpoint - FIXED VERSION
-app.post('/api/upload', upload.fields([
-    { name: 'file', maxCount: 1 },
-    { name: 'icon', maxCount: 1 },
-    { name: 'screenshots', maxCount: 4 }
-]), (req, res) => {
+// Simple test endpoint
+app.get('/api/test', (req, res) => {
+    res.json({ status: 'ok', message: 'Server is running' });
+});
+
+// Upload endpoint with connection error handling
+app.post('/api/upload', (req, res) => {
+    // Set longer timeout specifically for this request
+    req.setTimeout(300000);
+    res.setTimeout(300000);
+    
+    // Handle connection errors
+    req.on('error', (err) => {
+        console.error('Request error:', err);
+    });
+    
+    res.on('error', (err) => {
+        console.error('Response error:', err);
+    });
+    
     // Set proper content type
     res.setHeader('Content-Type', 'application/json');
     
     console.log('📤 Upload request received');
     
-    const files = req.files || {};
-    const appFile = files.file?.[0];
+    // Handle the upload with multer
+    const uploadMiddleware = upload.fields([
+        { name: 'file', maxCount: 1 },
+        { name: 'icon', maxCount: 1 },
+        { name: 'screenshots', maxCount: 4 }
+    ]);
     
-    if (!appFile) {
-        console.log('❌ No app file uploaded');
-        // Clean up any uploaded files
-        if (files.icon) files.icon.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-        if (files.screenshots) files.screenshots.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-        return res.status(400).json({ error: 'No app file uploaded' });
-    }
-
-    try {
-        const { name, version, developer, category, platform, license, description, github_repo, video_url } = req.body;
+    uploadMiddleware(req, res, async (err) => {
+        if (err) {
+            console.error('Multer error:', err);
+            
+            // Don't try to send response if connection is already dead
+            if (err.message === 'Request aborted') {
+                console.log('❌ Upload aborted by client');
+                return;
+            }
+            
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ error: 'File too large. Max size is 500MB' });
+            }
+            if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+                return res.status(400).json({ error: 'Too many files uploaded' });
+            }
+            return res.status(400).json({ error: err.message });
+        }
         
-        console.log('📦 App details:', { name, version, developer, platform });
+        const files = req.files || {};
+        const appFile = files.file?.[0];
         
-        // Basic validation
-        if (!name || !version || !developer || !category || !platform || !license || !description) {
-            console.log('❌ Missing required fields');
-            // Clean up files
+        if (!appFile) {
+            console.log('❌ No app file uploaded');
+            // Clean up any uploaded files
             if (files.icon) files.icon.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
             if (files.screenshots) files.screenshots.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-            try { fs.unlinkSync(appFile.path); } catch (e) {}
-            return res.status(400).json({ error: 'All required fields must be filled' });
+            return res.status(400).json({ error: 'No app file uploaded' });
         }
 
-        // Read current apps
-        const apps = readApps();
-        
-        // Generate package name from app name
-        const package_name = name.toLowerCase().replace(/[^a-z0-9]/g, '.');
-        
-        // Check for duplicates
-        if (apps.find(a => a.name.toLowerCase() === name.toLowerCase())) {
-            console.log('❌ Duplicate app name:', name);
-            // Clean up files
-            if (files.icon) files.icon.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-            if (files.screenshots) files.screenshots.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-            try { fs.unlinkSync(appFile.path); } catch (e) {}
-            return res.status(400).json({ error: 'App with this name already exists' });
+        try {
+            const { name, version, developer, category, platform, license, description, github_repo, video_url } = req.body;
+            
+            console.log('📦 App details:', { name, version, developer, platform });
+            
+            // Basic validation
+            if (!name || !version || !developer || !category || !platform || !license || !description) {
+                console.log('❌ Missing required fields');
+                // Clean up files
+                if (files.icon) files.icon.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+                if (files.screenshots) files.screenshots.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+                try { fs.unlinkSync(appFile.path); } catch (e) {}
+                return res.status(400).json({ error: 'All required fields must be filled' });
+            }
+
+            // Read current apps
+            const apps = readApps();
+            
+            // Generate package name from app name
+            const package_name = name.toLowerCase().replace(/[^a-z0-9]/g, '.');
+            
+            // Check for duplicates
+            if (apps.find(a => a.name.toLowerCase() === name.toLowerCase())) {
+                console.log('❌ Duplicate app name:', name);
+                // Clean up files
+                if (files.icon) files.icon.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+                if (files.screenshots) files.screenshots.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+                try { fs.unlinkSync(appFile.path); } catch (e) {}
+                return res.status(400).json({ error: 'App with this name already exists' });
+            }
+
+            // Process icon
+            const iconFile = files.icon?.[0];
+            const iconPath = iconFile ? `/media/${path.basename(iconFile.path)}` : null;
+
+            // Process screenshots
+            const screenshotFiles = files.screenshots || [];
+            if (screenshotFiles.length > 4) {
+                console.log('❌ Too many screenshots:', screenshotFiles.length);
+                // Clean up files
+                if (files.icon) files.icon.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+                screenshotFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
+                try { fs.unlinkSync(appFile.path); } catch (e) {}
+                return res.status(400).json({ error: 'Maximum 4 screenshots allowed' });
+            }
+            
+            const screenshotPaths = screenshotFiles.map(f => `/media/${path.basename(f.path)}`);
+
+            // Get file size
+            const fileSize = fs.statSync(appFile.path).size;
+
+            // Create new app entry
+            const newApp = {
+                id: generateId(),
+                name: name,
+                package_name: package_name,
+                version: version,
+                description: description,
+                developer: developer,
+                category: category,
+                platform: platform,
+                size: fileSize,
+                downloads: 0,
+                filename: path.basename(appFile.path),
+                icon: iconPath,
+                screenshots: screenshotPaths,
+                github_repo: github_repo || null,
+                video_url: video_url || null,
+                upload_date: new Date().toISOString(),
+                license: license,
+                verified: true,
+                rating: 0,
+                reviewCount: 0
+            };
+
+            apps.push(newApp);
+            
+            if (writeApps(apps)) {
+                console.log('✅ App uploaded successfully:', name);
+                return res.status(200).json({ 
+                    success: true, 
+                    message: '✅ App uploaded successfully!',
+                    appId: newApp.id
+                });
+            } else {
+                throw new Error('Failed to save app data');
+            }
+
+        } catch (error) {
+            console.error('❌ Upload error:', error.message);
+            // Clean up all files
+            if (files.icon) files.icon.forEach(f => { try { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); } catch (e) {} });
+            if (files.screenshots) files.screenshots.forEach(f => { try { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); } catch (e) {} });
+            if (appFile && fs.existsSync(appFile.path)) try { fs.unlinkSync(appFile.path); } catch (e) {}
+            return res.status(500).json({ error: error.message });
         }
-
-        // Process icon
-        const iconFile = files.icon?.[0];
-        const iconPath = iconFile ? `/media/${path.basename(iconFile.path)}` : null;
-
-        // Process screenshots
-        const screenshotFiles = files.screenshots || [];
-        if (screenshotFiles.length > 4) {
-            console.log('❌ Too many screenshots:', screenshotFiles.length);
-            // Clean up files
-            if (files.icon) files.icon.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-            screenshotFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-            try { fs.unlinkSync(appFile.path); } catch (e) {}
-            return res.status(400).json({ error: 'Maximum 4 screenshots allowed' });
-        }
-        
-        const screenshotPaths = screenshotFiles.map(f => `/media/${path.basename(f.path)}`);
-
-        // Get file size
-        const fileSize = fs.statSync(appFile.path).size;
-
-        // Create new app entry
-        const newApp = {
-            id: generateId(),
-            name: name,
-            package_name: package_name,
-            version: version,
-            description: description,
-            developer: developer,
-            category: category,
-            platform: platform,
-            size: fileSize,
-            downloads: 0,
-            filename: path.basename(appFile.path),
-            icon: iconPath,
-            screenshots: screenshotPaths,
-            github_repo: github_repo || null,
-            video_url: video_url || null,
-            upload_date: new Date().toISOString(),
-            license: license,
-            verified: true,
-            rating: 0,
-            reviewCount: 0
-        };
-
-        apps.push(newApp);
-        
-        if (writeApps(apps)) {
-            console.log('✅ App uploaded successfully:', name);
-            return res.status(200).json({ 
-                success: true, 
-                message: '✅ App uploaded successfully!',
-                appId: newApp.id
-            });
-        } else {
-            throw new Error('Failed to save app data');
-        }
-
-    } catch (error) {
-        console.error('❌ Upload error:', error.message);
-        // Clean up all files
-        if (files.icon) files.icon.forEach(f => { try { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); } catch (e) {} });
-        if (files.screenshots) files.screenshots.forEach(f => { try { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); } catch (e) {} });
-        if (appFile && fs.existsSync(appFile.path)) try { fs.unlinkSync(appFile.path); } catch (e) {}
-        return res.status(500).json({ error: error.message });
-    }
+    });
 });
 
 // Submit a review
@@ -285,7 +348,7 @@ app.post('/api/review/:appId', (req, res) => {
         // Update app rating
         const appReviews = reviews.filter(r => r.appId === appId);
         const totalRating = appReviews.reduce((sum, r) => sum + r.rating, 0);
-        apps[appIndex].rating = (totalRating / appReviews.length).toFixed(1);
+        apps[appIndex].rating = appReviews.length > 0 ? (totalRating / appReviews.length).toFixed(1) : 0;
         apps[appIndex].reviewCount = appReviews.length;
         
         if (writeReviews(reviews) && writeApps(apps)) {
@@ -457,11 +520,12 @@ app.get('/api/stats', (req, res) => {
     
     try {
         const apps = readApps();
+        const totalRating = apps.reduce((sum, a) => sum + (parseFloat(a.rating) || 0), 0);
         const stats = {
             total_apps: apps.length,
             total_downloads: apps.reduce((sum, a) => sum + (a.downloads || 0), 0),
             total_size: apps.reduce((sum, a) => sum + (a.size || 0), 0),
-            avg_rating: apps.length > 0 ? (apps.reduce((sum, a) => sum + (parseFloat(a.rating) || 0), 0) / apps.length).toFixed(1) : '0.0',
+            avg_rating: apps.length > 0 ? (totalRating / apps.length).toFixed(1) : '0.0',
             by_platform: {},
             by_category: {}
         };
@@ -489,20 +553,37 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// ==================== 404 HANDLER - FIXED (No wildcard *) ====================
-// This catches any unmatched routes and returns JSON instead of HTML
+// 404 handler
 app.use((req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.status(404).json({ error: 'API endpoint not found' });
 });
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    // Don't try to send response if headers already sent
+    if (!res.headersSent) {
+        res.setHeader('Content-Type', 'application/json');
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ==================== CREATE HTTP SERVER ====================
+const server = http.createServer(app);
+
+// Increase server timeout
+server.timeout = 300000; // 5 minutes
+server.keepAliveTimeout = 300000; // 5 minutes
+server.headersTimeout = 310000; // Slightly longer than keepAliveTimeout
+
 // ==================== START SERVER ====================
 const PORT = 3000;
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
     const localIP = getLocalIP();
     console.log('\n' + '╔══════════════════════════════════════╗');
-    console.log('║     🚀 QUANTA OS APP STORE v3.2.2    ║');
-    console.log('║     No Wildcard Error - Fully Fixed  ║');
+    console.log('║     🚀 QUANTA OS APP STORE v3.2.4    ║');
+    console.log('║     Ultimate Connection Fix          ║');
     console.log('╚══════════════════════════════════════╝');
     console.log(`📱 Version: ${APP_STORE_VERSION}`);
     console.log(`📍 Local: http://localhost:${PORT}`);
@@ -510,7 +591,38 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`📂 Apps: ${UPLOAD_DIR}`);
     console.log(`🖼️  Media: ${MEDIA_DIR}`);
     console.log(`\n✅ Server started successfully!`);
-    console.log(`   • No wildcard errors`);
-    console.log(`   • JSON responses guaranteed`);
-    console.log(`   • Upload working\n`);
+    console.log(`   • Connection timeouts: 5 minutes`);
+    console.log(`   • Keep-alive enabled`);
+    console.log(`   • Upload errors: FIXED\n`);
+});
+
+// Handle server errors
+server.on('error', (err) => {
+    console.error('Server error:', err);
+});
+
+// Handle connection errors
+server.on('connection', (socket) => {
+    socket.setTimeout(300000);
+    socket.on('error', (err) => {
+        console.error('Socket error:', err.message);
+    });
+});
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+    console.log('\n👋 Shutting down server...');
+    server.close(() => {
+        console.log('✅ Server stopped');
+        process.exit(0);
+    });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err);
 });
