@@ -5,4 +5,4 @@ kill $(lsof -t -i:3000) 2>/dev/null
 tmux kill-session -t quantaos 2>/dev/null
 tmux new-session -d -s quantaos
 tmux send-keys -t quantaos "cd ~/QuantaOS && node server.js & ssh -R 80:localhost:3000 ssh.localhost.run" Enter
-tmux attach -t quantaos
+exec tmux attach -t quantaos
