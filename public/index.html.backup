@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Quanta OS - Verified Open Source Apps</title>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header .tagline {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .stats-badge {
+            display: inline-flex;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 50px;
+            margin-top: 15px;
+            gap: 20px;
+        }
+
+        .tab-nav {
+            display: flex;
+            background: white;
+            padding: 8px;
+            border-radius: 50px;
+            margin: -20px 20px 20px 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .tab-nav .tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-nav .tab i {
+            font-size: 1.1rem;
+        }
+
+        .tab-nav .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .platform-filter {
+            display: flex;
+            gap: 8px;
+            padding: 0 20px 15px 20px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .platform-filter::-webkit-scrollbar {
+            display: none;
+        }
+
+        .platform-pill {
+            padding: 8px 16px;
+            border-radius: 50px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .platform-pill i {
+            font-size: 1rem;
+        }
+
+        .platform-pill.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .search-section {
+            padding: 0 20px 20px 20px;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 50px;
+            padding: 0 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #e0e0e0;
+        }
+
+        .search-box i {
+            color: #999;
+            font-size: 1rem;
+            margin-right: 10px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 14px 0;
+            border: none;
+            background: transparent;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 0 20px 20px 20px;
+        }
+
+        .category-card {
+            background: white;
+            padding: 12px 5px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #f0f0f0;
+        }
+
+        .category-card i {
+            font-size: 1.4rem;
+            color: #667eea;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .category-card span {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #444;
+        }
+
+        .category-card.active {
+            background: #667eea;
+        }
+
+        .category-card.active i,
+        .category-card.active span {
+            color: white;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            padding: 0 20px 20px 20px;
+        }
+
+        .app-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #f0f0f0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .app-header {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .app-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+            overflow: hidden;
+        }
+
+        .app-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .app-header-info {
+            flex: 1;
+        }
+
+        .app-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #333;
+        }
+
+        .platform-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .platform-badge.android { background: #3DDC84; color: #000; }
+        .platform-badge.ios { background: #000; color: #fff; }
+        .platform-badge.windows { background: #00A4EF; color: #fff; }
+        .platform-badge.mac { background: #A2AAAD; color: #000; }
+        .platform-badge.linux { background: #FCC624; color: #000; }
+        .platform-badge.web { background: #4285F4; color: #fff; }
+
+        .app-package {
+            color: #999;
+            font-size: 0.75rem;
+            margin-bottom: 10px;
+        }
+
+        .app-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .verification-badges {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .verified-badge {
+            background: #10b981;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .opensource-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .github-badge {
+            background: #24292e;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            text-decoration: none;
+        }
+
+        .rating-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .stars {
+            color: #ffc107;
+            font-size: 1rem;
+        }
+
+        .review-count {
+            color: #666;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .review-count:hover {
+            text-decoration: underline;
+        }
+
+        .app-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .meta-tag {
+            background: #f5f5f5;
+            padding: 4px 10px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .details-btn {
+            flex: 1;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .details-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .review-btn {
+            flex: 1;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .review-btn:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 25px;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            position: relative;
+            animation: slideIn 0.3s ease;
+        }
+
+        .review-modal {
+            max-width: 500px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #999;
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #333;
+        }
+
+        /* Review Form Styles */
+        .review-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .review-form h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .star-rating {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .star-rating span {
+            font-size: 40px;
+            cursor: pointer;
+            color: #ddd;
+            transition: all 0.2s;
+        }
+
+        .star-rating span:hover,
+        .star-rating span.active {
+            color: #ffc107;
+            transform: scale(1.1);
+        }
+
+        .review-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .review-input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .review-name-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .submit-review-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .submit-review-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        /* Reviews List */
+        .reviews-list {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .review-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .reviewer-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .review-rating {
+            color: #ffc107;
+        }
+
+        .review-date {
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .review-comment {
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .no-reviews {
+            text-align: center;
+            color: #999;
+            padding: 30px;
+        }
+
+        /* Details Page Styles */
+        .details-header {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 30px;
+            padding-right: 40px;
+        }
+
+        .details-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .details-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .details-title {
+            flex: 1;
+        }
+
+        .details-name {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .details-package {
+            color: #999;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .details-platform {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .details-section {
+            margin: 30px 0;
+        }
+
+        .details-section h3 {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .details-section h3 i {
+            color: #667eea;
+        }
+
+        .details-description {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            line-height: 1.6;
+            color: #444;
+            font-size: 1rem;
+        }
+
+        .details-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .details-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #555;
+        }
+
+        .details-meta-item i {
+            width: 20px;
+            color: #667eea;
+        }
+
+        .details-badges {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .details-badge {
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .details-badge.verified {
+            background: #10b981;
+            color: white;
+        }
+
+        .details-badge.opensource {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .details-badge.github {
+            background: #24292e;
+            color: white;
+            text-decoration: none;
+        }
+
+        .details-screenshots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .details-screenshot {
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+            aspect-ratio: 9/16;
+        }
+
+        .details-screenshot:hover {
+            transform: scale(1.05);
+        }
+
+        .details-screenshot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .details-video {
+            width: 100%;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            cursor: pointer;
+        }
+
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 10px;
+        }
+
+        /* Upload Form */
+        .upload-form {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin: 0 20px 20px 20px;
+        }
+
+        .upload-form h2 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            color: #333;
+        }
+
+        .info-box {
+            background: #f0f3ff;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #444;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .icon-upload-area {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .icon-preview {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            overflow: hidden;
+        }
+
+        .icon-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .icon-upload-btn {
+            flex: 1;
+            background: #f0f3ff;
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .github-input-group {
+            display: flex;
+            align-items: center;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .github-input-group span {
+            background: #f5f5f5;
+            padding: 12px 15px;
+            border-right: 2px solid #e0e0e0;
+        }
+
+        .file-input-area {
+            border: 2px dashed #667eea;
+            background: #f8f9ff;
+            padding: 25px;
+            text-align: center;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .file-input-area:hover {
+            background: #e0e7ff;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 0.8rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .details-header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Quanta OS</h1>
+        <div class="tagline">Verified Open Source App Store</div>
+        <div class="stats-badge">
+            <span><i class="fas fa-box"></i> <span id="totalApps">0</span> Apps</span>
+            <span><i class="fas fa-download"></i> <span id="totalDownloads">0</span> Downloads</span>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+        <div class="tab active" onclick="showTab('browse')">
+            <i class="fas fa-compass"></i> Browse
+        </div>
+        <div class="tab" onclick="showTab('upload')">
+            <i class="fas fa-cloud-upload-alt"></i> Upload
+        </div>
+        <div class="tab" onclick="showTab('stats')">
+            <i class="fas fa-chart-bar"></i> Stats
+        </div>
+    </div>
+
+    <div>
+        <!-- Browse Tab -->
+        <div id="browseTab">
+            <!-- Platform Filter -->
+            <div class="platform-filter">
+                <div class="platform-pill active" onclick="filterByPlatform('all')">
+                    <i class="fas fa-globe"></i> All
+                </div>
+                <div class="platform-pill" onclick="filterByPlatform('android')">
+                    <i class="fab fa-android"></i> Android
+                </div>
+                <div class="platform-pill" onclick="filterByPlatform('ios')">
+                    <i class="fab fa-apple"></i> iOS
+                </div>
+                <div class="platform-pill" onclick="filterByPlatform('windows')">
+                    <i class="fab fa-windows"></i> Windows
+                </div>
+                <div class="platform-pill" onclick="filterByPlatform('mac')">
+                    <i class="fab fa-apple"></i> macOS
+                </div>
+                <div class="platform-pill" onclick="filterByPlatform('linux')">
+                    <i class="fab fa-linux"></i> Linux
+                </div>
+                <div class="platform-pill" onclick="filterByPlatform('web')">
+                    <i class="fas fa-globe"></i> Web
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-section">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search verified open source apps...">
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="category-grid">
+                <div class="category-card active" onclick="filterByCategory('all')">
+                    <i class="fas fa-th-large"></i>
+                    <span>All</span>
+                </div>
+                <div class="category-card" onclick="filterByCategory('Productivity')">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Productivity</span>
+                </div>
+                <div class="category-card" onclick="filterByCategory('Games')">
+                    <i class="fas fa-gamepad"></i>
+                    <span>Games</span>
+                </div>
+                <div class="category-card" onclick="filterByCategory('Education')">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Education</span>
+                </div>
+                <div class="category-card" onclick="filterByCategory('Social')">
+                    <i class="fas fa-users"></i>
+                    <span>Social</span>
+                </div>
+                <div class="category-card" onclick="filterByCategory('Multimedia')">
+                    <i class="fas fa-film"></i>
+                    <span>Multimedia</span>
+                </div>
+                <div class="category-card" onclick="filterByCategory('Tools')">
+                    <i class="fas fa-tools"></i>
+                    <span>Tools</span>
+                </div>
+                <div class="category-card" onclick="filterByCategory('Developer')">
+                    <i class="fas fa-code"></i>
+                    <span>Developer</span>
+                </div>
+            </div>
+
+            <!-- Apps Container -->
+            <div id="appsContainer" class="apps-grid">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading verified apps...
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Tab - FIXED with proper form encoding -->
+        <div id="uploadTab" class="hidden">
+            <div class="upload-form">
+                <h2>Upload Open Source App</h2>
+                <div class="info-box">
+                    <i class="fas fa-shield-alt"></i> Apps are automatically verified as open source.
+                </div>
+                
+                <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/api/upload">
+                    <!-- App Icon Upload -->
+                    <div class="form-group">
+                        <label>App Icon (Optional)</label>
+                        <div class="icon-upload-area">
+                            <div class="icon-preview" id="iconPreview">
+                                <i class="fas fa-apple-alt"></i>
+                            </div>
+                            <div class="icon-upload-btn" onclick="document.getElementById('iconInput').click()">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Upload Icon</span>
+                                <small style="display:block; color:#999; margin-top:5px;">PNG, JPG (512x512)</small>
+                            </div>
+                        </div>
+                        <input type="file" id="iconInput" name="icon" accept="image/*" style="display:none;">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>App Name *</label>
+                            <input type="text" name="name" required placeholder="e.g., Glowmate">
+                        </div>
+                        <div class="form-group">
+                            <label>Version *</label>
+                            <input type="text" name="version" required placeholder="1.0.0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Developer *</label>
+                            <input type="text" name="developer" required placeholder="Your name or organization">
+                        </div>
+                        <div class="form-group">
+                            <label>License *</label>
+                            <input type="text" name="license" required placeholder="MIT, GPL-3.0, Apache-2.0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fab fa-github"></i> GitHub Repository (Optional)</label>
+                        <div class="github-input-group">
+                            <span>github.com/</span>
+                            <input type="text" name="github_repo" placeholder="username/repository">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Platform *</label>
+                            <select name="platform" required>
+                                <option value="android">Android</option>
+                                <option value="ios">iOS</option>
+                                <option value="windows">Windows</option>
+                                <option value="mac">macOS</option>
+                                <option value="linux">Linux</option>
+                                <option value="web">Web</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Category *</label>
+                            <select name="category" required>
+                                <option value="Productivity">Productivity</option>
+                                <option value="Games">Games</option>
+                                <option value="Education">Education</option>
+                                <option value="Social">Social</option>
+                                <option value="Multimedia">Multimedia</option>
+                                <option value="Tools">Tools</option>
+                                <option value="Developer">Developer</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea name="description" required rows="4" placeholder="Describe your app features..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>App File *</label>
+                        <div class="file-input-area" onclick="document.getElementById('appFile').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span id="fileLabel">Click to select APK, IPA, EXE, or other platform file</span>
+                        </div>
+                        <input type="file" id="appFile" name="file" required style="display:none;" accept=".apk,.ipa,.exe,.dmg,.AppImage,.deb,.rpm,.zip">
+                        <small style="color:#999; display:block; margin-top:5px;">Max size: 500MB</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Screenshots (Optional - Max 4)</label>
+                        <input type="file" name="screenshots" accept="image/*" multiple style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:12px;">
+                        <small style="color:#999;">Show your app in action</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Video Demo URL (Optional)</label>
+                        <input type="url" name="video_url" placeholder="https://youtube.com/watch?v=...">
+                    </div>
+
+                    <button type="submit" class="download-btn" style="margin-top:10px;">
+                        <i class="fas fa-cloud-upload-alt"></i> Upload App
+                    </button>
+                </form>
+                <div id="uploadMessage" style="margin-top:20px;"></div>
+            </div>
+        </div>
+
+        <!-- Stats Tab -->
+        <div id="statsTab" class="hidden">
+            <div class="stats-grid" id="statsContainer">
+                <div class="loading">Loading stats...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Details Modal -->
+    <div id="appModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeAppModal()">&times;</span>
+            <div id="appDetailsContent"></div>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content review-modal">
+            <span class="close-modal" onclick="closeReviewModal()">&times;</span>
+            <div id="reviewContent"></div>
+        </div>
+    </div>
+
+    <!-- View Reviews Modal -->
+    <div id="viewReviewsModal" class="modal">
+        <div class="modal-content review-modal">
+            <span class="close-modal" onclick="closeViewReviewsModal()">&times;</span>
+            <div id="viewReviewsContent"></div>
+        </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div id="imageModal" class="image-modal" style="display: none;" onclick="closeImageModal()">
+        <img id="fullImage" src="" alt="">
+    </div>
+
+    <script>
+        // State
+        let currentPlatform = 'all';
+        let currentCategory = 'all';
+        let allApps = [];
+        let currentReviewApp = null;
+        let currentRating = 0;
+        let allReviews = {};
+        let searchTimeout;
+
+        // Tab Navigation
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.closest('.tab').classList.add('active');
+            
+            document.getElementById('browseTab').classList.add('hidden');
+            document.getElementById('uploadTab').classList.add('hidden');
+            document.getElementById('statsTab').classList.add('hidden');
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            
+            if (tabName === 'browse') loadApps();
+            if (tabName === 'stats') loadStats();
+        }
+
+        // Preview icon
+        document.getElementById('iconInput')?.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('iconPreview').innerHTML = `<img src="${e.target.result}" alt="Icon">`;
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        // Update file label
+        document.getElementById('appFile')?.addEventListener('change', function(e) {
+            const label = document.getElementById('fileLabel');
+            if (e.target.files && e.target.files[0]) {
+                label.textContent = e.target.files[0].name;
+            } else {
+                label.textContent = 'Click to select APK, IPA, EXE, or other platform file';
+            }
+        });
+
+        // Handle search input
+        function handleSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(filterApps, 300);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', handleSearch);
+
+        // Filters
+        function filterByPlatform(platform) {
+            currentPlatform = platform;
+            document.querySelectorAll('.platform-pill').forEach(p => p.classList.remove('active'));
+            event.target.classList.add('active');
+            filterApps();
+        }
+
+        function filterByCategory(category) {
+            currentCategory = category;
+            document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+            event.target.closest('.category-card').classList.add('active');
+            filterApps();
+        }
+
+        function filterApps() {
+            let filtered = allApps;
+
+            if (currentPlatform !== 'all') {
+                filtered = filtered.filter(app => (app.platform || 'android') === currentPlatform);
+            }
+
+            if (currentCategory !== 'all') {
+                filtered = filtered.filter(app => app.category === currentCategory);
+            }
+
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            if (searchTerm) {
+                filtered = filtered.filter(app => 
+                    app.name.toLowerCase().includes(searchTerm) ||
+                    (app.description && app.description.toLowerCase().includes(searchTerm)) ||
+                    app.developer.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            displayApps(filtered);
+        }
+
+        // Load Apps
+        async function loadApps() {
+            try {
+                const response = await fetch('/api/apps');
+                allApps = await response.json();
+                
+                // Load reviews for all apps
+                await loadAllReviews();
+                
+                filterApps();
+                updateStats();
+            } catch (error) {
+                document.getElementById('appsContainer').innerHTML = 
+                    `<div class="error">Error loading apps: ${error.message}</div>`;
+            }
+        }
+
+        // Load all reviews
+        async function loadAllReviews() {
+            for (const app of allApps) {
+                try {
+                    const response = await fetch(`/api/reviews/${app.id}`);
+                    const reviews = await response.json();
+                    allReviews[app.id] = reviews;
+                } catch (error) {
+                    console.error('Error loading reviews for', app.id);
+                }
+            }
+        }
+
+        // Get reviews for an app
+        function getReviews(appId) {
+            return allReviews[appId] || [];
+        }
+
+        // Display Apps
+        function displayApps(apps) {
+            const container = document.getElementById('appsContainer');
+            
+            if (apps.length === 0) {
+                container.innerHTML = '<div class="loading">No apps found</div>';
+                return;
+            }
+
+            container.innerHTML = apps.map(app => {
+                const reviews = getReviews(app.id);
+                const avgRating = reviews.length > 0 
+                    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+                    : 0;
+                const reviewCount = reviews.length;
+
+                const githubHtml = app.github_repo ? 
+                    `<a href="https://github.com/${app.github_repo}" target="_blank" class="github-badge">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>` : '';
+
+                const iconHtml = app.icon ? 
+                    `<img src="${app.icon}" alt="${app.name}">` : 
+                    `<i class="fab fa-${app.platform || 'android'}"></i>`;
+
+                return `
+                <div class="app-card">
+                    <div class="app-header">
+                        <div class="app-icon">
+                            ${iconHtml}
+                        </div>
+                        <div class="app-header-info">
+                            <div class="app-name">${escapeHtml(app.name)}</div>
+                            <span class="platform-badge ${app.platform || 'android'}">
+                                ${(app.platform || 'android').toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="app-package">${escapeHtml(app.package_name)}</div>
+                    <div class="app-description">${escapeHtml(app.description || '')}</div>
+                    
+                    <div class="verification-badges">
+                        <span class="verified-badge">
+                            <i class="fas fa-check-circle"></i> Verified
+                        </span>
+                        <span class="opensource-badge">
+                            <i class="fas fa-code"></i> Open Source
+                        </span>
+                        ${githubHtml}
+                    </div>
+                    
+                    <div class="rating-container">
+                        <div class="stars">
+                            ${getStars(avgRating)}
+                        </div>
+                        <span class="review-count" onclick="viewReviews('${app.id}')">
+                            (${reviewCount} ${reviewCount === 1 ? 'review' : 'reviews'})
+                        </span>
+                    </div>
+
+                    <div class="app-meta">
+                        <span class="meta-tag"><i class="fas fa-code-branch"></i> v${escapeHtml(app.version)}</span>
+                        <span class="meta-tag"><i class="fas fa-user"></i> ${escapeHtml(app.developer)}</span>
+                        <span class="meta-tag"><i class="fas fa-download"></i> ${app.downloads || 0}</span>
+                        <span class="meta-tag"><i class="fas fa-database"></i> ${formatFileSize(app.size)}</span>
+                        <span class="meta-tag"><i class="fas fa-file-contract"></i> ${escapeHtml(app.license || 'OS')}</span>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="details-btn" onclick="viewAppDetails('${app.id}')">
+                            <i class="fas fa-info-circle"></i> Details
+                        </button>
+                        <button class="review-btn" onclick="openReviewModal('${app.id}')">
+                            <i class="fas fa-star"></i> Review
+                        </button>
+                    </div>
+
+                    <a href="/api/download/${app.id}" class="download-btn">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                </div>
+            `}).join('');
+        }
+
+        // View App Details
+        function viewAppDetails(appId) {
+            const app = allApps.find(a => a.id === appId);
+            if (!app) return;
+            
+            const modal = document.getElementById('appModal');
+            const content = document.getElementById('appDetailsContent');
+            
+            const reviews = getReviews(app.id);
+            const avgRating = reviews.length > 0 
+                ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+                : 0;
+            
+            const githubHtml = app.github_repo ? 
+                `<a href="https://github.com/${app.github_repo}" target="_blank" class="details-badge github">
+                    <i class="fab fa-github"></i> GitHub
+                </a>` : '';
+            
+            const screenshotsHtml = app.screenshots && app.screenshots.length > 0 ? `
+                <div class="details-section">
+                    <h3><i class="fas fa-images"></i> Screenshots</h3>
+                    <div class="details-screenshots">
+                        ${app.screenshots.map(s => `
+                            <div class="details-screenshot" onclick="viewFullImage('${s}')">
+                                <img src="${s}" alt="screenshot">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : '';
+            
+            const videoHtml = app.video_url ? `
+                <div class="details-section">
+                    <h3><i class="fas fa-video"></i> Video Demo</h3>
+                    <video controls class="details-video">
+                        <source src="${app.video_url}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+            ` : '';
+            
+            content.innerHTML = `
+                <div class="details-header">
+                    <div class="details-icon">
+                        ${app.icon ? `<img src="${app.icon}" alt="${app.name}">` : `<i class="fab fa-${app.platform || 'android'}"></i>`}
+                    </div>
+                    <div class="details-title">
+                        <div class="details-name">${escapeHtml(app.name)}</div>
+                        <div class="details-package">${escapeHtml(app.package_name)}</div>
+                        <span class="details-platform platform-badge ${app.platform || 'android'}">
+                            ${(app.platform || 'android').toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="details-badges">
+                    <span class="details-badge verified">
+                        <i class="fas fa-check-circle"></i> Verified
+                    </span>
+                    <span class="details-badge opensource">
+                        <i class="fas fa-code"></i> Open Source
+                    </span>
+                    ${githubHtml}
+                </div>
+
+                <div class="rating-container" style="margin:20px 0;">
+                    <div class="stars" style="font-size:1.5rem;">
+                        ${getStars(avgRating)}
+                    </div>
+                    <span class="review-count" style="font-size:1rem;" onclick="viewReviews('${app.id}')">
+                        ${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}
+                    </span>
+                </div>
+
+                <div class="details-section">
+                    <h3><i class="fas fa-info-circle"></i> Description</h3>
+                    <div class="details-description">
+                        ${escapeHtml(app.description || 'No description provided.')}
+                    </div>
+                </div>
+
+                <div class="details-section">
+                    <h3><i class="fas fa-chart-bar"></i> Details</h3>
+                    <div class="details-meta-grid">
+                        <div class="details-meta-item">
+                            <i class="fas fa-code-branch"></i>
+                            <span><strong>Version:</strong> ${escapeHtml(app.version)}</span>
+                        </div>
+                        <div class="details-meta-item">
+                            <i class="fas fa-user"></i>
+                            <span><strong>Developer:</strong> ${escapeHtml(app.developer)}</span>
+                        </div>
+                        <div class="details-meta-item">
+                            <i class="fas fa-download"></i>
+                            <span><strong>Downloads:</strong> ${app.downloads || 0}</span>
+                        </div>
+                        <div class="details-meta-item">
+                            <i class="fas fa-database"></i>
+                            <span><strong>Size:</strong> ${formatFileSize(app.size)}</span>
+                        </div>
+                        <div class="details-meta-item">
+                            <i class="fas fa-file-contract"></i>
+                            <span><strong>License:</strong> ${escapeHtml(app.license || 'OS')}</span>
+                        </div>
+                        <div class="details-meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span><strong>Uploaded:</strong> ${new Date(app.upload_date).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${screenshotsHtml}
+                ${videoHtml}
+
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="review-btn" onclick="openReviewModal('${app.id}')" style="flex:1;">
+                        <i class="fas fa-star"></i> Write a Review
+                    </button>
+                    <a href="/api/download/${app.id}" class="download-btn" style="flex:1;">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        // Close App Modal
+        function closeAppModal() {
+            document.getElementById('appModal').style.display = 'none';
+        }
+
+        // Open Review Modal
+        function openReviewModal(appId) {
+            const app = allApps.find(a => a.id === appId);
+            if (!app) return;
+            
+            currentReviewApp = appId;
+            currentRating = 0;
+            
+            const modal = document.getElementById('reviewModal');
+            const content = document.getElementById('reviewContent');
+            
+            content.innerHTML = `
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h2>Review ${escapeHtml(app.name)}</h2>
+                    <p style="color:#666; margin-top:10px;">Share your experience with this app</p>
+                </div>
+                
+                <div class="review-form">
+                    <div style="text-align:center;">
+                        <label style="font-weight:600; margin-bottom:10px; display:block;">Your Rating</label>
+                        <div class="star-rating" id="starRating">
+                            ${[1,2,3,4,5].map(i => `<span onclick="setRating(${i})" id="star-${i}">★</span>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight:600; margin-bottom:10px; display:block;">Your Name (Optional)</label>
+                        <input type="text" id="reviewerName" class="review-name-input" placeholder="Anonymous">
+                    </div>
+                    
+                    <div>
+                        <label style="font-weight:600; margin-bottom:10px; display:block;">Your Review</label>
+                        <textarea id="reviewComment" class="review-input" rows="4" placeholder="What did you think?"></textarea>
+                    </div>
+                    
+                    <button class="submit-review-btn" onclick="submitReview()">
+                        Submit Review
+                    </button>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        // Close Review Modal
+        function closeReviewModal() {
+            document.getElementById('reviewModal').style.display = 'none';
+            currentReviewApp = null;
+            currentRating = 0;
+        }
+
+        // Set Rating
+        function setRating(rating) {
+            currentRating = rating;
+            for (let i = 1; i <= 5; i++) {
+                const star = document.getElementById(`star-${i}`);
+                if (star) {
+                    if (i <= rating) {
+                        star.classList.add('active');
+                    } else {
+                        star.classList.remove('active');
+                    }
+                }
+            }
+        }
+
+        // Submit Review
+        async function submitReview() {
+            if (!currentRating) {
+                alert('Please select a rating');
+                return;
+            }
+            
+            const comment = document.getElementById('reviewComment')?.value || '';
+            const userName = document.getElementById('reviewerName')?.value || 'Anonymous';
+            
+            try {
+                const response = await fetch(`/api/review/${currentReviewApp}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rating: currentRating,
+                        comment: comment,
+                        userName: userName
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ Review submitted successfully!');
+                    closeReviewModal();
+                    
+                    // Reload reviews for this app
+                    const reviewsResponse = await fetch(`/api/reviews/${currentReviewApp}`);
+                    const reviews = await reviewsResponse.json();
+                    allReviews[currentReviewApp] = reviews;
+                    
+                    // Update display
+                    loadApps();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error submitting review');
+            }
+        }
+
+        // View Reviews
+        function viewReviews(appId) {
+            const app = allApps.find(a => a.id === appId);
+            if (!app) return;
+            
+            const reviews = getReviews(appId);
+            
+            const modal = document.getElementById('viewReviewsModal');
+            const content = document.getElementById('viewReviewsContent');
+            
+            const avgRating = reviews.length > 0 
+                ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+                : 0;
+            
+            let reviewsHtml = '';
+            if (reviews.length === 0) {
+                reviewsHtml = '<div class="no-reviews">No reviews yet. Be the first to review!</div>';
+            } else {
+                reviewsHtml = reviews.map(r => `
+                    <div class="review-item">
+                        <div class="review-header">
+                            <span class="reviewer-name">${escapeHtml(r.userName)}</span>
+                            <span class="review-rating">${'★'.repeat(r.rating)}</span>
+                        </div>
+                        <div class="review-comment">${escapeHtml(r.comment)}</div>
+                        <div class="review-date">${new Date(r.date).toLocaleDateString()}</div>
+                    </div>
+                `).join('');
+            }
+            
+            content.innerHTML = `
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h2>Reviews for ${escapeHtml(app.name)}</h2>
+                    <div style="margin:15px 0;">
+                        <span style="font-size:2rem; font-weight:700; color:#667eea;">${avgRating}</span>
+                        <span style="color:#666;"> out of 5</span>
+                        <div class="stars" style="font-size:1.5rem; margin-top:5px;">
+                            ${getStars(avgRating)}
+                        </div>
+                        <p style="color:#666;">${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}</p>
+                    </div>
+                </div>
+                
+                <div class="reviews-list">
+                    ${reviewsHtml}
+                </div>
+                
+                <button class="review-btn" onclick="openReviewModal('${appId}')" style="margin-top:20px; width:100%;">
+                    <i class="fas fa-star"></i> Write a Review
+                </button>
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        // Close View Reviews Modal
+        function closeViewReviewsModal() {
+            document.getElementById('viewReviewsModal').style.display = 'none';
+        }
+
+        // View Full Image
+        function viewFullImage(src) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('fullImage');
+            img.src = src;
+            modal.style.display = 'flex';
+        }
+
+        // Close Image Modal
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        // Get Stars
+        function getStars(rating) {
+            rating = parseFloat(rating) || 0;
+            const full = Math.floor(rating);
+            const half = rating % 1 >= 0.5 ? 1 : 0;
+            const empty = 5 - full - half;
+            return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
+        }
+
+        // Load Stats
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                document.getElementById('statsContainer').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-value">${stats.total_apps || 0}</div>
+                        <div class="stat-label">Total Apps</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${stats.total_downloads || 0}</div>
+                        <div class="stat-label">Downloads</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${stats.avg_rating || 0}</div>
+                        <div class="stat-label">Avg Rating</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // Update Header Stats
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                document.getElementById('totalApps').textContent = stats.total_apps || 0;
+                document.getElementById('totalDownloads').textContent = stats.total_downloads || 0;
+            } catch (error) {}
+        }
+
+        // Upload Form - FIXED submit handler
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const messageDiv = document.getElementById('uploadMessage');
+            
+            messageDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Uploading... (This may take a moment for large files)</div>';
+            
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                    // Don't set Content-Type header - browser sets it with boundary
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        throw new Error(errorJson.error || 'Upload failed');
+                    } catch {
+                        throw new Error('Upload failed: Server error');
+                    }
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    messageDiv.innerHTML = `<div class="success"><i class="fas fa-check-circle"></i> ${data.message}</div>`;
+                    e.target.reset();
+                    document.getElementById('iconPreview').innerHTML = '<i class="fas fa-apple-alt"></i>';
+                    document.getElementById('fileLabel').textContent = 'Click to select APK, IPA, EXE, or other platform file';
+                    setTimeout(() => showTab('browse'), 2000);
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                messageDiv.innerHTML = `<div class="error"><i class="fas fa-exclamation-circle"></i> ${error.message}</div>`;
+            }
+        });
+
+        // Utility Functions
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return String(unsafe)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const appModal = document.getElementById('appModal');
+            const reviewModal = document.getElementById('reviewModal');
+            const viewReviewsModal = document.getElementById('viewReviewsModal');
+            
+            if (event.target === appModal) {
+                appModal.style.display = 'none';
+            }
+            if (event.target === reviewModal) {
+                reviewModal.style.display = 'none';
+            }
+            if (event.target === viewReviewsModal) {
+                viewReviewsModal.style.display = 'none';
+            }
+        };
+
+        // Initial load
+        loadApps();
+    </script>
+</body>
+</html>

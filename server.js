@@ -553,6 +553,51 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+
+// ==================== F-DROID PROXY ====================
+// Fetches F-Droid server-side — no CORS issues in the browser
+
+const https_mod = require('https');
+
+function proxyFetch(url, res) {
+    console.log('[F-Droid] Fetching:', url);
+    const req = https_mod.get(url, {
+        headers: { 'User-Agent': 'QuantaOS/1.0', 'Accept': 'application/json' },
+        timeout: 90000
+    }, (r) => {
+        let data = [];
+        r.on('data', chunk => data.push(chunk));
+        r.on('end', () => {
+            const buf = Buffer.concat(data);
+            console.log('[F-Droid] Got', buf.length, 'bytes');
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Content-Length', buf.length);
+            res.status(200).end(buf);
+        });
+    });
+    req.on('error', (e) => {
+        console.error('[F-Droid] Error:', e.message);
+        res.status(500).json({ error: e.message, apps: [], packages: {} });
+    });
+    req.on('timeout', () => {
+        req.destroy();
+        res.status(504).json({ error: 'Timeout fetching F-Droid', apps: [], packages: {} });
+    });
+}
+
+// Full index (all ~4000+ apps at once)
+app.get('/api/fdroid-index', (req, res) => {
+    proxyFetch('https://f-droid.org/repo/index-v1.json', res);
+});
+
+// Paginated API (fallback)
+app.get('/api/fdroid', (req, res) => {
+    const limit  = req.query.limit  || '100';
+    const offset = req.query.offset || '0';
+    proxyFetch(`https://f-droid.org/api/v1/packages/?limit=${limit}&offset=${offset}`, res);
+});
+
 // 404 handler
 app.use((req, res) => {
     res.setHeader('Content-Type', 'application/json');
