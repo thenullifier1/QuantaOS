@@ -1,10 +1,10 @@
-// server.js - Quanta OS App Store (ULTIMATE FIX - No More Aborted Errors)
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const os = require('os');
-const http = require('http');
+const cors = require('cors');
+const { saveAppToSupabase } = require('./supabase-storage');
+
 const app = express();
 
 // ==================== CONFIGURATION ====================
@@ -17,31 +17,28 @@ const APPS_JSON_PATH = path.join(DATA_DIR, 'apps.json');
 const REVIEWS_JSON_PATH = path.join(DATA_DIR, 'reviews.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
-// Create all directories
-[UPLOAD_DIR, MEDIA_DIR, DATA_DIR, PUBLIC_DIR].forEach(dir => {
+// Ensure directories exist
+[DATA_DIR, UPLOAD_DIR, MEDIA_DIR].forEach(dir => {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
-        console.log(`📁 Created: ${dir}`);
     }
 });
 
-// Initialize data files
+// Initialize apps.json if it doesn't exist
 if (!fs.existsSync(APPS_JSON_PATH)) {
-    fs.writeFileSync(APPS_JSON_PATH, JSON.stringify([]));
-    console.log('📁 Created apps.json');
-}
-if (!fs.existsSync(REVIEWS_JSON_PATH)) {
-    fs.writeFileSync(REVIEWS_JSON_PATH, JSON.stringify([]));
-    console.log('📁 Created reviews.json');
+    fs.writeFileSync(APPS_JSON_PATH, '[]');
 }
 
-// ==================== HELPER FUNCTIONS ====================
+// Initialize reviews.json if it doesn't exist
+if (!fs.existsSync(REVIEWS_JSON_PATH)) {
+    fs.writeFileSync(REVIEWS_JSON_PATH, '{}');
+}
+
+// Helper functions
 function readApps() {
     try {
-        const data = fs.readFileSync(APPS_JSON_PATH, 'utf8');
-        return JSON.parse(data);
-    } catch (err) {
-        console.error('Error reading apps:', err);
+        return JSON.parse(fs.readFileSync(APPS_JSON_PATH, 'utf8'));
+    } catch (e) {
         return [];
     }
 }
@@ -50,19 +47,17 @@ function writeApps(apps) {
     try {
         fs.writeFileSync(APPS_JSON_PATH, JSON.stringify(apps, null, 2));
         return true;
-    } catch (err) {
-        console.error('Error writing apps:', err);
+    } catch (e) {
+        console.error('Error writing apps:', e);
         return false;
     }
 }
 
 function readReviews() {
     try {
-        const data = fs.readFileSync(REVIEWS_JSON_PATH, 'utf8');
-        return JSON.parse(data);
-    } catch (err) {
-        console.error('Error reading reviews:', err);
-        return [];
+        return JSON.parse(fs.readFileSync(REVIEWS_JSON_PATH, 'utf8'));
+    } catch (e) {
+        return {};
     }
 }
 
@@ -70,53 +65,25 @@ function writeReviews(reviews) {
     try {
         fs.writeFileSync(REVIEWS_JSON_PATH, JSON.stringify(reviews, null, 2));
         return true;
-    } catch (err) {
-        console.error('Error writing reviews:', err);
+    } catch (e) {
+        console.error('Error writing reviews:', e);
         return false;
     }
 }
 
-function generateId() {
-    return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+function generateAppId(name, developer) {
+    const base = `${name}-${developer}`.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const timestamp = Date.now().toString(36);
+    return `${base}-${timestamp}`;
 }
 
-function getLocalIP() {
-    const interfaces = os.networkInterfaces();
-    for (const name of Object.keys(interfaces)) {
-        for (const iface of interfaces[name]) {
-            if (iface.family === 'IPv4' && !iface.internal) {
-                return iface.address;
-            }
-        }
-    }
-    return 'localhost';
-}
+// ==================== UPLOAD CONFIGURATION ====================
+// Use memory storage for Supabase
+const memoryStorage = multer.memoryStorage();
 
-// ==================== MULTER CONFIG ====================
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        if (file.fieldname === 'screenshots' || file.fieldname === 'icon') {
-            cb(null, MEDIA_DIR);
-        } else {
-            cb(null, UPLOAD_DIR);
-        }
-    },
-    filename: (req, file, cb) => {
-        const sanitizedName = req.body.name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'app';
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        
-        let prefix = 'app';
-        if (file.fieldname === 'icon') prefix = 'icon';
-        if (file.fieldname === 'screenshots') prefix = 'screenshot';
-        
-        cb(null, `quanta_${prefix}_${sanitizedName}_${uniqueSuffix}${ext}`);
-    }
-});
-
-const upload = multer({ 
-    storage: storage,
-    limits: { 
+const upload = multer({
+    storage: memoryStorage,
+    limits: {
         fileSize: 500 * 1024 * 1024, // 500MB
         files: 10,
         fieldSize: 50 * 1024 * 1024,
@@ -130,70 +97,59 @@ app.use(express.urlencoded({ extended: true, limit: '500mb' }));
 
 // Add keep-alive and timeout headers
 app.use((req, res, next) => {
-    // Set longer timeouts for upload routes
     if (req.path === '/api/upload') {
-        req.setTimeout(300000); // 5 minutes
-        res.setTimeout(300000); // 5 minutes
+        req.setTimeout(300000);
+        res.setTimeout(300000);
     } else {
-        req.setTimeout(120000); // 2 minutes
-        res.setTimeout(120000); // 2 minutes
+        req.setTimeout(120000);
+        res.setTimeout(120000);
     }
-    
-    // Add keep-alive headers
+
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Keep-Alive', 'timeout=300');
-    
     next();
 });
 
 app.use(express.static(PUBLIC_DIR));
-app.use('/downloads', express.static(UPLOAD_DIR));
-app.use('/media', express.static(MEDIA_DIR));
 
 // ==================== API ENDPOINTS ====================
 
-// Simple test endpoint
+// Test endpoint
 app.get('/api/test', (req, res) => {
     res.json({ status: 'ok', message: 'Server is running' });
 });
 
-// Upload endpoint with connection error handling
+// Upload endpoint with Supabase storage
 app.post('/api/upload', (req, res) => {
-    // Set longer timeout specifically for this request
     req.setTimeout(300000);
     res.setTimeout(300000);
-    
-    // Handle connection errors
+
     req.on('error', (err) => {
         console.error('Request error:', err);
     });
-    
+
     res.on('error', (err) => {
         console.error('Response error:', err);
     });
-    
-    // Set proper content type
+
     res.setHeader('Content-Type', 'application/json');
-    
     console.log('📤 Upload request received');
-    
-    // Handle the upload with multer
+
     const uploadMiddleware = upload.fields([
         { name: 'file', maxCount: 1 },
         { name: 'icon', maxCount: 1 },
         { name: 'screenshots', maxCount: 4 }
     ]);
-    
+
     uploadMiddleware(req, res, async (err) => {
         if (err) {
             console.error('Multer error:', err);
-            
-            // Don't try to send response if connection is already dead
+
             if (err.message === 'Request aborted') {
                 console.log('❌ Upload aborted by client');
                 return;
             }
-            
+
             if (err.code === 'LIMIT_FILE_SIZE') {
                 return res.status(400).json({ error: 'File too large. Max size is 500MB' });
             }
@@ -202,84 +158,55 @@ app.post('/api/upload', (req, res) => {
             }
             return res.status(400).json({ error: err.message });
         }
-        
+
         const files = req.files || {};
         const appFile = files.file?.[0];
-        
+
         if (!appFile) {
             console.log('❌ No app file uploaded');
-            // Clean up any uploaded files
-            if (files.icon) files.icon.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-            if (files.screenshots) files.screenshots.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
             return res.status(400).json({ error: 'No app file uploaded' });
         }
 
         try {
             const { name, version, developer, category, platform, license, description, github_repo, video_url } = req.body;
-            
+
             console.log('📦 App details:', { name, version, developer, platform });
-            
-            // Basic validation
+
             if (!name || !version || !developer || !category || !platform || !license || !description) {
                 console.log('❌ Missing required fields');
-                // Clean up files
-                if (files.icon) files.icon.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-                if (files.screenshots) files.screenshots.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-                try { fs.unlinkSync(appFile.path); } catch (e) {}
                 return res.status(400).json({ error: 'All required fields must be filled' });
             }
 
-            // Read current apps
+            // Upload to Supabase
+            const appFileUrl = await saveAppToSupabase(appFile, { type: 'app' });
+
+            let iconUrl = null;
+            if (files.icon?.[0]) {
+                iconUrl = await saveAppToSupabase(files.icon[0], { type: 'icon' });
+            }
+
+            const screenshotUrls = [];
+            if (files.screenshots) {
+                for (const screenshot of files.screenshots) {
+                    const url = await saveAppToSupabase(screenshot, { type: 'screenshot' });
+                    screenshotUrls.push(url);
+                }
+            }
+
             const apps = readApps();
-            
-            // Generate package name from app name
-            const package_name = name.toLowerCase().replace(/[^a-z0-9]/g, '.');
-            
-            // Check for duplicates
-            if (apps.find(a => a.name.toLowerCase() === name.toLowerCase())) {
-                console.log('❌ Duplicate app name:', name);
-                // Clean up files
-                if (files.icon) files.icon.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-                if (files.screenshots) files.screenshots.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-                try { fs.unlinkSync(appFile.path); } catch (e) {}
-                return res.status(400).json({ error: 'App with this name already exists' });
-            }
+            const id = generateAppId(name, developer);
 
-            // Process icon
-            const iconFile = files.icon?.[0];
-            const iconPath = iconFile ? `/media/${path.basename(iconFile.path)}` : null;
-
-            // Process screenshots
-            const screenshotFiles = files.screenshots || [];
-            if (screenshotFiles.length > 4) {
-                console.log('❌ Too many screenshots:', screenshotFiles.length);
-                // Clean up files
-                if (files.icon) files.icon.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-                screenshotFiles.forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} });
-                try { fs.unlinkSync(appFile.path); } catch (e) {}
-                return res.status(400).json({ error: 'Maximum 4 screenshots allowed' });
-            }
-            
-            const screenshotPaths = screenshotFiles.map(f => `/media/${path.basename(f.path)}`);
-
-            // Get file size
-            const fileSize = fs.statSync(appFile.path).size;
-
-            // Create new app entry
             const newApp = {
-                id: generateId(),
+                id: id,
                 name: name,
-                package_name: package_name,
                 version: version,
-                description: description,
                 developer: developer,
                 category: category,
                 platform: platform,
-                size: fileSize,
-                downloads: 0,
-                filename: path.basename(appFile.path),
-                icon: iconPath,
-                screenshots: screenshotPaths,
+                description: description,
+                filename: appFileUrl,
+                icon: iconUrl,
+                screenshots: screenshotUrls,
                 github_repo: github_repo || null,
                 video_url: video_url || null,
                 upload_date: new Date().toISOString(),
@@ -290,11 +217,11 @@ app.post('/api/upload', (req, res) => {
             };
 
             apps.push(newApp);
-            
+
             if (writeApps(apps)) {
                 console.log('✅ App uploaded successfully:', name);
-                return res.status(200).json({ 
-                    success: true, 
+                return res.status(200).json({
+                    success: true,
                     message: '✅ App uploaded successfully!',
                     appId: newApp.id
                 });
@@ -304,10 +231,6 @@ app.post('/api/upload', (req, res) => {
 
         } catch (error) {
             console.error('❌ Upload error:', error.message);
-            // Clean up all files
-            if (files.icon) files.icon.forEach(f => { try { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); } catch (e) {} });
-            if (files.screenshots) files.screenshots.forEach(f => { try { if (fs.existsSync(f.path)) fs.unlinkSync(f.path); } catch (e) {} });
-            if (appFile && fs.existsSync(appFile.path)) try { fs.unlinkSync(appFile.path); } catch (e) {}
             return res.status(500).json({ error: error.message });
         }
     });
@@ -316,52 +239,48 @@ app.post('/api/upload', (req, res) => {
 // Submit a review
 app.post('/api/review/:appId', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    
-    try {
-        const { rating, comment, userName } = req.body;
-        const appId = req.params.appId;
-        
-        if (!rating || rating < 1 || rating > 5) {
-            return res.status(400).json({ error: 'Rating must be 1-5' });
-        }
 
-        const apps = readApps();
-        const appIndex = apps.findIndex(a => a.id === appId);
-        
-        if (appIndex === -1) {
-            return res.status(404).json({ error: 'App not found' });
+    try {
+        const { rating, comment, user } = req.body;
+        const appId = req.params.appId;
+
+        if (!rating || !comment) {
+            return res.status(400).json({ error: 'Rating and comment are required' });
         }
 
         const reviews = readReviews();
-        
+        if (!reviews[appId]) {
+            reviews[appId] = [];
+        }
+
         const newReview = {
-            id: generateId(),
-            appId: appId,
+            id: Date.now().toString(36),
+            user: user || 'Anonymous',
             rating: parseInt(rating),
-            comment: comment || '',
-            userName: userName || 'Anonymous',
+            comment: comment,
             date: new Date().toISOString()
         };
-        
-        reviews.push(newReview);
-        
+
+        reviews[appId].push(newReview);
+
         // Update app rating
-        const appReviews = reviews.filter(r => r.appId === appId);
-        const totalRating = appReviews.reduce((sum, r) => sum + r.rating, 0);
-        apps[appIndex].rating = appReviews.length > 0 ? (totalRating / appReviews.length).toFixed(1) : 0;
-        apps[appIndex].reviewCount = appReviews.length;
-        
-        if (writeReviews(reviews) && writeApps(apps)) {
-            res.json({ 
-                success: true, 
-                message: 'Review added',
-                newRating: apps[appIndex].rating
-            });
-        } else {
-            res.status(500).json({ error: 'Failed to save review' });
+        const apps = readApps();
+        const appIndex = apps.findIndex(a => a.id === appId);
+        if (appIndex !== -1) {
+            const appReviews = reviews[appId];
+            const totalRating = appReviews.reduce((sum, r) => sum + r.rating, 0);
+            apps[appIndex].rating = totalRating / appReviews.length;
+            apps[appIndex].reviewCount = appReviews.length;
+            writeApps(apps);
         }
-        
+
+        if (writeReviews(reviews)) {
+            res.json({ success: true, review: newReview });
+        } else {
+            throw new Error('Failed to save review');
+        }
     } catch (error) {
+        console.error('Review error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -369,11 +288,10 @@ app.post('/api/review/:appId', (req, res) => {
 // Get reviews for an app
 app.get('/api/reviews/:appId', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    
+
     try {
         const reviews = readReviews();
-        const appReviews = reviews.filter(r => r.appId === req.params.appId)
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
+        const appReviews = reviews[req.params.appId] || [];
         res.json(appReviews);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -383,31 +301,28 @@ app.get('/api/reviews/:appId', (req, res) => {
 // Get all apps
 app.get('/api/apps', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    
+
     try {
-        const { category, platform, search } = req.query;
         let apps = readApps();
-        
-        // Apply filters
-        if (category && category !== 'all') {
+        const { search, category, platform } = req.query;
+
+        if (category) {
             apps = apps.filter(app => app.category === category);
         }
-        if (platform && platform !== 'all') {
+        if (platform) {
             apps = apps.filter(app => app.platform === platform);
         }
         if (search) {
             const s = search.toLowerCase();
             apps = apps.filter(app => 
                 app.name.toLowerCase().includes(s) ||
-                (app.description && app.description.toLowerCase().includes(s)) ||
+                app.description.toLowerCase().includes(s) ||
                 app.developer.toLowerCase().includes(s) ||
                 (app.github_repo && app.github_repo.toLowerCase().includes(s))
             );
         }
-        
-        // Sort by upload date (newest first)
+
         apps.sort((a, b) => new Date(b.upload_date) - new Date(a.upload_date));
-        
         res.json(apps);
     } catch (error) {
         console.error('Error getting apps:', error);
@@ -418,7 +333,7 @@ app.get('/api/apps', (req, res) => {
 // Get single app
 app.get('/api/apps/:id', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
-    
+
     try {
         const apps = readApps();
         const app = apps.find(a => a.id === req.params.id);
@@ -429,245 +344,62 @@ app.get('/api/apps/:id', (req, res) => {
     }
 });
 
-// Download with tracking
-app.get('/api/download/:id', (req, res) => {
+// Download app
+app.get('/api/download/:appId', (req, res) => {
     try {
         const apps = readApps();
-        const appIndex = apps.findIndex(a => a.id === req.params.id);
-        if (appIndex === -1) return res.status(404).json({ error: 'App not found' });
-
-        const app = apps[appIndex];
-        const filePath = path.join(UPLOAD_DIR, app.filename);
-        if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
-
-        app.downloads++;
-        apps[appIndex] = app;
-        writeApps(apps);
-
-        const ext = path.extname(filePath).toLowerCase();
-        const contentTypes = {
-            '.apk': 'application/vnd.android.package-archive',
-            '.ipa': 'application/octet-stream',
-            '.exe': 'application/x-msdownload',
-            '.msi': 'application/x-msi',
-            '.dmg': 'application/x-apple-diskimage',
-            '.pkg': 'application/x-newton-compatible-pkg',
-            '.AppImage': 'application/x-iso9660-appimage',
-            '.deb': 'application/vnd.debian.binary-package',
-            '.rpm': 'application/x-rpm',
-            '.zip': 'application/zip'
-        };
+        const app = apps.find(a => a.id === req.params.appId);
         
-        if (contentTypes[ext]) {
-            res.setHeader('Content-Type', contentTypes[ext]);
+        if (!app) {
+            return res.status(404).json({ error: 'App not found' });
         }
 
-        res.download(filePath, `${app.name}-${app.version}${ext}`);
+        // Redirect to Supabase URL or serve file
+        if (app.filename.startsWith('http')) {
+            res.redirect(app.filename);
+        } else {
+            const filePath = path.join(UPLOAD_DIR, path.basename(app.filename));
+            if (fs.existsSync(filePath)) {
+                res.download(filePath);
+            } else {
+                res.status(404).json({ error: 'File not found' });
+            }
+        }
     } catch (error) {
+        console.error('Download error:', error);
         res.status(500).json({ error: error.message });
     }
 });
-
-// Delete app (protected)
-app.delete('/api/apps/:id', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    
-    const adminKey = req.headers['admin-key'];
-    if (adminKey !== 'QuantaOS2024') {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    try {
-        const apps = readApps();
-        const appIndex = apps.findIndex(a => a.id === req.params.id);
-        if (appIndex === -1) return res.status(404).json({ error: 'App not found' });
-
-        const app = apps[appIndex];
-        const filePath = path.join(UPLOAD_DIR, app.filename);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-
-        // Delete icon
-        if (app.icon) {
-            const iconPath = path.join(MEDIA_DIR, path.basename(app.icon));
-            if (fs.existsSync(iconPath)) fs.unlinkSync(iconPath);
-        }
-
-        // Delete screenshots
-        if (app.screenshots) {
-            app.screenshots.forEach(s => {
-                const shotPath = path.join(MEDIA_DIR, path.basename(s));
-                if (fs.existsSync(shotPath)) fs.unlinkSync(shotPath);
-            });
-        }
-
-        apps.splice(appIndex, 1);
-        writeApps(apps);
-
-        // Delete reviews
-        const reviews = readReviews();
-        const filteredReviews = reviews.filter(r => r.appId !== req.params.id);
-        writeReviews(filteredReviews);
-
-        res.json({ success: true, message: 'App deleted' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Get stats
-app.get('/api/stats', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    
-    try {
-        const apps = readApps();
-        const totalRating = apps.reduce((sum, a) => sum + (parseFloat(a.rating) || 0), 0);
-        const stats = {
-            total_apps: apps.length,
-            total_downloads: apps.reduce((sum, a) => sum + (a.downloads || 0), 0),
-            total_size: apps.reduce((sum, a) => sum + (a.size || 0), 0),
-            avg_rating: apps.length > 0 ? (totalRating / apps.length).toFixed(1) : '0.0',
-            by_platform: {},
-            by_category: {}
-        };
-        
-        apps.forEach(app => {
-            stats.by_platform[app.platform] = (stats.by_platform[app.platform] || 0) + 1;
-            stats.by_category[app.category] = (stats.by_category[app.category] || 0) + 1;
-        });
-        
-        res.json(stats);
-    } catch (error) {
-        console.error('Stats error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Health check
-app.get('/api/health', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.json({ 
-        status: 'healthy', 
-        version: APP_STORE_VERSION,
-        apps: readApps().length,
-        uptime: process.uptime()
-    });
-});
-
-
-// ==================== F-DROID PROXY ====================
-// Fetches F-Droid server-side — no CORS issues in the browser
-
-const https_mod = require('https');
-
-function proxyFetch(url, res) {
-    console.log('[F-Droid] Fetching:', url);
-    const req = https_mod.get(url, {
-        headers: { 'User-Agent': 'QuantaOS/1.0', 'Accept': 'application/json' },
-        timeout: 90000
-    }, (r) => {
-        let data = [];
-        r.on('data', chunk => data.push(chunk));
-        r.on('end', () => {
-            const buf = Buffer.concat(data);
-            console.log('[F-Droid] Got', buf.length, 'bytes');
-            res.setHeader('Content-Type', 'application/json');
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Content-Length', buf.length);
-            res.status(200).end(buf);
-        });
-    });
-    req.on('error', (e) => {
-        console.error('[F-Droid] Error:', e.message);
-        res.status(500).json({ error: e.message, apps: [], packages: {} });
-    });
-    req.on('timeout', () => {
-        req.destroy();
-        res.status(504).json({ error: 'Timeout fetching F-Droid', apps: [], packages: {} });
-    });
-}
-
-// Full index (all ~4000+ apps at once)
-app.get('/api/fdroid-index', (req, res) => {
-    proxyFetch('https://f-droid.org/repo/index-v1.json', res);
-});
-
-// Paginated API (fallback)
-app.get('/api/fdroid', (req, res) => {
-    const limit  = req.query.limit  || '100';
-    const offset = req.query.offset || '0';
-    proxyFetch(`https://f-droid.org/api/v1/packages/?limit=${limit}&offset=${offset}`, res);
-});
-
-// 404 handler
-app.use((req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.status(404).json({ error: 'API endpoint not found' });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error('Server error:', err);
-    // Don't try to send response if headers already sent
-    if (!res.headersSent) {
-        res.setHeader('Content-Type', 'application/json');
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// ==================== CREATE HTTP SERVER ====================
-const server = http.createServer(app);
-
-// Increase server timeout
-server.timeout = 300000; // 5 minutes
-server.keepAliveTimeout = 300000; // 5 minutes
-server.headersTimeout = 310000; // Slightly longer than keepAliveTimeout
 
 // ==================== START SERVER ====================
-const PORT = 3000;
-server.listen(PORT, '0.0.0.0', () => {
-    const localIP = getLocalIP();
-    console.log('\n' + '╔══════════════════════════════════════╗');
+const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
+    console.log('\n╔══════════════════════════════════════╗');
     console.log('║     🚀 QUANTA OS APP STORE v3.2.4    ║');
     console.log('║     Ultimate Connection Fix          ║');
     console.log('╚══════════════════════════════════════╝');
     console.log(`📱 Version: ${APP_STORE_VERSION}`);
     console.log(`📍 Local: http://localhost:${PORT}`);
-    console.log(`🌐 Network: http://${localIP}:${PORT}`);
+    
+    // Get local IP
+    const { networkInterfaces } = require('os');
+    const nets = networkInterfaces();
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) {
+            if (net.family === 'IPv4' && !net.internal) {
+                console.log(`🌐 Network: http://${net.address}:${PORT}`);
+            }
+        }
+    }
+    
     console.log(`📂 Apps: ${UPLOAD_DIR}`);
     console.log(`🖼️  Media: ${MEDIA_DIR}`);
-    console.log(`\n✅ Server started successfully!`);
-    console.log(`   • Connection timeouts: 5 minutes`);
-    console.log(`   • Keep-alive enabled`);
-    console.log(`   • Upload errors: FIXED\n`);
+    console.log('\n✅ Server started successfully with Supabase storage!');
+    console.log('   • Connection timeouts: 5 minutes');
+    console.log('   • Keep-alive enabled');
+    console.log('   • Upload errors: FIXED\n');
 });
 
-// Handle server errors
-server.on('error', (err) => {
-    console.error('Server error:', err);
-});
-
-// Handle connection errors
-server.on('connection', (socket) => {
-    socket.setTimeout(300000);
-    socket.on('error', (err) => {
-        console.error('Socket error:', err.message);
-    });
-});
-
-// Handle graceful shutdown
-process.on('SIGINT', () => {
-    console.log('\n👋 Shutting down server...');
-    server.close(() => {
-        console.log('✅ Server stopped');
-        process.exit(0);
-    });
-});
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
-});
-
-process.on('unhandledRejection', (err) => {
-    console.error('Unhandled Rejection:', err);
-});
+module.exports = app;
